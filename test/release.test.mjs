@@ -112,8 +112,7 @@ test('release manifest keeps the product explicitly in beta until foreground gat
   assert.equal(productManifest.release.productionReady, false);
   assert.deepEqual(productManifest.release.promotionBlockers, [
     'real-wps-acceptance',
-    'novice-unassisted-install',
-    'github-source-of-truth'
+    'novice-unassisted-install'
   ]);
 });
 
