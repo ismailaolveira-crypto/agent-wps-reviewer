@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-documents-list.schema.json",
+  "title": "List WPS Documents Input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

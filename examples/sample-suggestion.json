@@ -1,0 +1,46 @@
+{
+  "documentHandle": "active-document-handle",
+  "revisionToken": "sha256:current-document-revision",
+  "sourceAgent": "codex",
+  "reviewProfile": "whitepaper-chief-editor-v1",
+  "reviewScope": {
+    "sectionId": "5.1.3",
+    "sectionTitle": "课程体系建设现状",
+    "sectionGoal": "说明受访院校课程覆盖情况及课程体系的主要短板"
+  },
+  "workflow": {
+    "stage": "final-previewed",
+    "candidateRoundId": "round-5.1.3-001",
+    "approvedCandidateIds": ["candidate-5.1.3-01"]
+  },
+  "styleBaseline": {
+    "profile": "network-security-talent-whitepaper-2022-2024",
+    "version": "1"
+  },
+  "suggestions": [
+    {
+      "candidateId": "candidate-5.1.3-01",
+      "category": "style-alignment",
+      "anchorText": "高校课程覆盖已较广",
+      "contextAfter": "但实训体系与师资短板突出。",
+      "comment": "这里把受访样本的结果外推为高校整体情况，超出了数据边界。建议改为“在本次受访院校中，课程覆盖已较广”。",
+      "quality": {
+        "issue": "高校课程覆盖的判断没有限定受访样本范围，形成整体性外推。",
+        "impact": "课程覆盖结论超出调研证据边界，审稿人无法确认判断适用范围。",
+        "action": "soften",
+        "actionStatement": "建议改为“在本次受访院校中，课程覆盖已较广”。",
+        "purposeCodes": ["evidence-accuracy", "historical-style"],
+        "keyTerms": ["课程覆盖", "受访院校"],
+        "evidenceIds": [],
+        "styleRuleIds": ["STYLE-04"],
+        "verification": {
+          "fullContextChecked": true,
+          "counterEvidenceChecked": true,
+          "result": "supported",
+          "documentEvidenceExcerpt": "高校课程覆盖已较广",
+          "relatedExcerpts": ["但实训体系与师资短板突出。"]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "network-security-talent-2022-2024",
+  "version": "1",
+  "displayName": "网络安全人才白皮书 2022-2024 风格",
+  "scope": "content-level continuity with the 2022-2024 network-security talent reports",
+  "styleRuleIds": [
+    "STYLE-01",
+    "STYLE-02",
+    "STYLE-03",
+    "STYLE-04",
+    "STYLE-05",
+    "STYLE-06",
+    "STYLE-07",
+    "STYLE-08"
+  ],
+  "styleRules": "style-rules.json",
+  "sourceFingerprints": "source-fingerprints.json",
+  "sourceEvidenceMap": "style-evidence-map.json",
+  "sourceEvidenceMapMarkdown": "style-evidence-map.md",
+  "requiresProjectPack": false
+}

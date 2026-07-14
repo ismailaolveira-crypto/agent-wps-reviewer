@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-suggestion-payload.schema.json",
+  "title": "Legacy WPS suggestion payload",
+  "description": "Development-only payload accepted when legacy submission is explicitly enabled.",
+  "oneOf": [
+    { "$ref": "./wps-legacy-suggestion.schema.json" },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "suggestions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "./wps-legacy-suggestion.schema.json" }
+        }
+      },
+      "required": ["suggestions"]
+    }
+  ]
+}

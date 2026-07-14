@@ -1,0 +1,14 @@
+{
+  "profile": "network-security-talent-whitepaper-2022-2024",
+  "version": "1",
+  "rules": [
+    {"id":"STYLE-01","statement":"判断在前：先给行业判断，再解释机制，最后给数据或案例。"},
+    {"id":"STYLE-02","statement":"缩短铺垫：不在核心判断前堆放大段通用背景。"},
+    {"id":"STYLE-03","statement":"克制正式：使用行业研究语言，避免宣传口号和情绪化结论。"},
+    {"id":"STYLE-04","statement":"限定样本：调研发现只代表受访样本，不外推成全国行业事实。"},
+    {"id":"STYLE-05","statement":"单一主问题：一章回答一个问题，段落递进，不跨章抢结论。"},
+    {"id":"STYLE-06","statement":"保留层级：保留 5.1.1、5.1.2 等三级标题和系列结构连续性。"},
+    {"id":"STYLE-07","statement":"判断有边界：传播性结论必须有证据、可引用，并由人确认。"},
+    {"id":"STYLE-08","statement":"去空泛 AI 腔：使用主体、机制、证据和风险边界替代空泛口号。"}
+  ]
+}

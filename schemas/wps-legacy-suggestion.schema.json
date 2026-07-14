@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-legacy-suggestion.schema.json",
+  "title": "Legacy unverified WPS suggestion",
+  "description": "Legacy compatibility payload. It is unverified and disabled by default for formal whitepaper review.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "docSessionId": { "type": "string", "default": "default" },
+    "sourceAgent": { "type": "string" },
+    "anchor": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "before": { "type": "string", "maxLength": 20000 },
+        "after": { "type": "string", "maxLength": 20000 }
+      },
+      "required": ["text"]
+    },
+    "anchorText": { "type": "string", "minLength": 1, "maxLength": 20000 },
+    "contextBefore": { "type": "string", "maxLength": 20000 },
+    "contextAfter": { "type": "string", "maxLength": 20000 },
+    "comment": { "type": "string", "minLength": 1, "maxLength": 20000 },
+    "replacement": { "type": "string", "maxLength": 20000 },
+    "reason": { "type": "string", "maxLength": 20000 },
+    "severity": { "type": "string", "enum": ["info", "minor", "major", "critical"] }
+  },
+  "anyOf": [{ "required": ["anchorText"] }, { "required": ["anchor"] }],
+  "required": ["comment"]
+}

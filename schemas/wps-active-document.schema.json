@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-active-document.schema.json",
+  "title": "Get active WPS document",
+  "description": "Return metadata for the most recently active WPS Writer document. The full document text is not returned by this tool.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

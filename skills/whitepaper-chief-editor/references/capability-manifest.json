@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "productVersion": "0.2.0",
+  "capabilities": {
+    "wps-comment": {
+      "status": "production",
+      "executorSkill": "whitepaper-wps-reviewer",
+      "mutatesBody": false,
+      "requiresWps": true,
+      "requiresUserAccept": true
+    },
+    "docx-redline": {
+      "status": "disabled",
+      "executorSkill": null,
+      "mutatesBody": true,
+      "requiresWps": false,
+      "requiresUserAccept": true,
+      "reason": "OOXML precision and compatibility gates are incomplete"
+    },
+    "pdf-replica": {
+      "status": "disabled",
+      "executorSkill": null,
+      "mutatesBody": false,
+      "requiresWps": false,
+      "requiresUserAccept": true,
+      "reason": "Full-page visual fidelity and template coverage are incomplete"
+    }
+  }
+}

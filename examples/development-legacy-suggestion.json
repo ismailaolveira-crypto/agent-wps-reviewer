@@ -1,0 +1,11 @@
+{
+  "docSessionId": "default",
+  "sourceAgent": "browser-acceptance-fixture",
+  "anchorText": "我们的方案可以提升文档审阅效率",
+  "contextBefore": "这是一段用于模拟 WPS 文档的内容。",
+  "contextAfter": "同时保留人工审核。",
+  "comment": "这条数据仅用于浏览器界面联调，不代表正式白皮书审稿意见。",
+  "metadata": {
+    "reviewStatus": "development-fixture"
+  }
+}

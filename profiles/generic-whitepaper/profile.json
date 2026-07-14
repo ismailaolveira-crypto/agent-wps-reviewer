@@ -1,0 +1,9 @@
+{
+  "id": "generic-whitepaper",
+  "version": "1",
+  "displayName": "通用中文白皮书",
+  "scope": "cross-industry editorial review",
+  "styleRuleIds": [],
+  "purposeReference": "skills/whitepaper-wps-reviewer/references/review-purpose.md",
+  "requiresProjectPack": false
+}

@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-suggestion.schema.json",
+  "title": "Qualified whitepaper review suggestion",
+  "description": "One final-previewed, source-grounded whitepaper review suggestion.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "candidateId": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "category": {
+      "type": "string",
+      "enum": [
+        "data-fact",
+        "structure-logic",
+        "duplicate-compression",
+        "style-alignment",
+        "anti-ai-tone",
+        "numbering-figure-table",
+        "committee-confirmation"
+      ]
+    },
+    "anchorText": {
+      "type": "string",
+      "description": "Exact original text from the current document.",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "contextBefore": { "type": "string", "maxLength": 20000 },
+    "contextAfter": { "type": "string", "maxLength": 20000 },
+    "comment": {
+      "type": "string",
+      "description": "Natural final WPS comment text, not the three-line candidate format.",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "issue": { "type": "string", "minLength": 8, "maxLength": 20000 },
+        "impact": { "type": "string", "minLength": 8, "maxLength": 20000 },
+        "action": {
+          "type": "string",
+          "enum": ["delete", "merge", "compress", "replace", "soften", "move", "verify", "confirm"]
+        },
+        "actionStatement": { "type": "string", "minLength": 4, "maxLength": 20000 },
+        "purposeCodes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "chapter-focus",
+              "evidence-accuracy",
+              "structure-logic",
+              "compression",
+              "anti-ai-tone",
+              "historical-style",
+              "human-boundary"
+            ]
+          }
+        },
+        "keyTerms": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 2, "maxLength": 40 }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "styleRuleIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["STYLE-01", "STYLE-02", "STYLE-03", "STYLE-04", "STYLE-05", "STYLE-06", "STYLE-07", "STYLE-08"]
+          }
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fullContextChecked": { "const": true },
+            "counterEvidenceChecked": { "const": true },
+            "result": { "const": "supported" },
+            "documentEvidenceExcerpt": { "type": "string", "minLength": 1, "maxLength": 20000 },
+            "relatedExcerpts": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1, "maxLength": 20000 }
+            }
+          },
+          "required": [
+            "fullContextChecked",
+            "counterEvidenceChecked",
+            "result",
+            "documentEvidenceExcerpt",
+            "relatedExcerpts"
+          ]
+        }
+      },
+      "required": [
+        "issue",
+        "impact",
+        "action",
+        "actionStatement",
+        "purposeCodes",
+        "keyTerms",
+        "evidenceIds",
+        "styleRuleIds",
+        "verification"
+      ]
+    }
+  },
+  "anyOf": [
+    { "required": ["contextBefore"] },
+    { "required": ["contextAfter"] }
+  ],
+  "required": ["candidateId", "category", "anchorText", "comment", "quality"]
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "product": "agent-wps-reviewer",
+  "release": {
+    "channel": "beta",
+    "productionReady": false,
+    "promotionBlockers": [
+      "real-wps-acceptance",
+      "novice-unassisted-install"
+    ]
+  },
+  "userFacingSkill": "whitepaper-chief-editor",
+  "productionSkills": [
+    {
+      "name": "whitepaper-chief-editor",
+      "source": "skills/whitepaper-chief-editor"
+    }
+  ],
+  "internalSkills": [
+    {
+      "name": "whitepaper-wps-reviewer",
+      "source": "skills/whitepaper-wps-reviewer",
+      "target": "whitepaper-chief-editor/references/executors/whitepaper-wps-reviewer"
+    }
+  ],
+  "retiredTopLevelSkills": [
+    "whitepaper-wps-reviewer"
+  ],
+  "resources": [
+    {
+      "source": "profiles",
+      "target": "whitepaper-chief-editor/references/profiles"
+    }
+  ],
+  "capabilityManifest": "skills/whitepaper-chief-editor/references/capability-manifest.json"
+}

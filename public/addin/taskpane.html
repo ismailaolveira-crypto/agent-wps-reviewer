@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent 审阅</title>
+    <link rel="stylesheet" href="/addin/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell" aria-label="Agent review inbox">
+      <section class="inbox-panel" aria-label="审阅建议列表">
+        <header class="topbar">
+          <div class="title-stack">
+            <h1>Agent 审阅</h1>
+            <p id="connectionStatus" class="status-line">正在连接本地 bridge</p>
+            <p id="currentDocument" class="current-document">当前文档：等待 WPS 文档</p>
+            <div class="connection-code-row">
+              <span id="connectionCode" class="connection-code">连接码：等待生成</span>
+              <button id="copyConnectionCodeButton" class="copy-code-button" type="button" title="复制文章连接码" aria-label="复制文章连接码">复制</button>
+              <span id="connectionCodeStatus" class="connection-code-status" role="status"></span>
+            </div>
+          </div>
+          <button id="refreshButton" class="refresh-button" type="button">刷新</button>
+        </header>
+
+        <div class="segmented-control" role="tablist" aria-label="建议视图">
+          <button id="filterPending" class="segment is-active" type="button" role="tab" aria-selected="true">
+            待处理 <span id="pendingCount">0</span>
+          </button>
+          <button id="filterAll" class="segment" type="button" role="tab" aria-selected="false">全部</button>
+        </div>
+
+        <div id="offlineNotice" class="offline-notice" hidden>bridge 连接中断，操作暂不可用</div>
+
+        <div id="suggestionList" class="suggestion-list" aria-live="polite"></div>
+      </section>
+
+      <section id="detailSheet" class="detail-sheet" aria-label="选中建议详情">
+        <div id="emptyDetail" class="empty-detail">
+          <h2>等待建议</h2>
+          <p>Agent 投递后会显示在列表中。</p>
+        </div>
+
+        <article id="detailCard" class="detail-card" hidden>
+          <header class="detail-header">
+            <div>
+              <span id="detailStatus" class="status-pill">待处理</span>
+              <h2 id="detailTitle"></h2>
+              <p id="detailDocument" class="detail-document"></p>
+            </div>
+            <button id="closeDetailButton" class="plain-button" type="button">关闭</button>
+          </header>
+
+          <div class="detail-content">
+            <section>
+              <h3>正文片段</h3>
+              <blockquote id="detailAnchor"></blockquote>
+            </section>
+
+            <section>
+              <h3>批注意见</h3>
+              <p id="detailComment"></p>
+            </section>
+          </div>
+
+          <div id="actionResult" class="action-result" role="status"></div>
+
+          <div class="actions">
+            <button id="locateButton" type="button">定位</button>
+            <button id="rejectButton" class="danger-button" type="button">拒绝</button>
+            <button id="acceptButton" class="primary-button" type="button">接受</button>
+          </div>
+        </article>
+      </section>
+
+      <div id="undoToast" class="undo-toast" role="status" hidden>
+        <span>已拒绝这条建议</span>
+        <button id="undoRejectButton" type="button">撤销</button>
+        <span class="shortcut-label">Command+Z</span>
+      </div>
+
+      <section id="mockPane" class="mock-pane" aria-label="Browser mock document" hidden>
+        <header>
+          <h2>浏览器验收模式</h2>
+        </header>
+        <textarea id="mockDocument" spellcheck="false">这是一段用于模拟 WPS 文档的内容。我们的方案可以提升文档审阅效率，同时保留人工审核。
+
+第二段用于测试重复锚点。我们的方案可以提升文档审阅效率，但如果没有上下文，定位可能出现歧义。</textarea>
+        <div>
+          <h3>模拟批注</h3>
+          <ol id="mockComments" class="mock-comments"></ol>
+        </div>
+      </section>
+    </main>
+
+    <script src="/addin/wps-adapter.js"></script>
+    <script src="/addin/app.js"></script>
+  </body>
+</html>

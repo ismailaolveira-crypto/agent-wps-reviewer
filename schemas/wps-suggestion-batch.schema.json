@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-suggestion-batch.schema.json",
+  "title": "Submit qualified whitepaper review suggestions",
+  "description": "Submit one approved review round for one section of the current WPS document.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "documentHandle": { "type": "string", "minLength": 1 },
+    "connectionCode": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^WPS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$",
+      "description": "Optional document pairing code. The MCP server resolves it to the current runtime handle before submission."
+    },
+    "revisionToken": { "type": "string", "minLength": 1 },
+    "sourceAgent": { "type": "string", "minLength": 1 },
+    "reviewProfile": { "const": "whitepaper-chief-editor-v1" },
+    "reviewScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sectionId": { "type": "string", "minLength": 1 },
+        "sectionTitle": { "type": "string", "minLength": 1 },
+        "sectionGoal": { "type": "string", "minLength": 8 }
+      },
+      "required": ["sectionId", "sectionTitle", "sectionGoal"]
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stage": { "const": "final-previewed" },
+        "candidateRoundId": { "type": "string", "minLength": 1 },
+        "approvedCandidateIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "required": ["stage", "candidateRoundId", "approvedCandidateIds"]
+    },
+    "styleBaseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "profile": { "const": "network-security-talent-whitepaper-2022-2024" },
+        "version": { "const": "1" }
+      },
+      "required": ["profile", "version"]
+    },
+    "suggestions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": { "$ref": "./wps-suggestion.schema.json" }
+    }
+  },
+  "required": [
+    "revisionToken",
+    "sourceAgent",
+    "reviewProfile",
+    "reviewScope",
+    "workflow",
+    "styleBaseline",
+    "suggestions"
+  ],
+  "anyOf": [
+    { "required": ["documentHandle"] },
+    { "required": ["connectionCode"] }
+  ]
+}

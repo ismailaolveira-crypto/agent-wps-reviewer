@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-document-code.schema.json",
+  "title": "Resolve an open WPS document by connection code",
+  "description": "Resolve the exact open WPS Writer document paired with a copied Agent Review connection code.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "connectionCode": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^WPS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$",
+      "description": "The WPS-XXXX-XXXX code shown in the document's Agent Review pane."
+    }
+  },
+  "required": ["connectionCode"]
+}

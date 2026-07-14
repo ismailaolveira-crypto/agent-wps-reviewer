@@ -1,0 +1,15 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui" onLoad="OnAddinLoad">
+  <ribbon startFromScratch="false">
+    <tabs>
+      <tab id="agentReviewerTab" label="Agent 审阅">
+        <group id="agentReviewerGroup" label="审阅">
+          <button id="showAgentReviewerPane"
+                  label="审阅收件箱"
+                  onAction="OnAction"
+                  getEnabled="OnGetEnabled"
+                  size="large"/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

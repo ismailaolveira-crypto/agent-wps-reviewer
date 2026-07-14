@@ -1,0 +1,120 @@
+{
+  "profile": "network-security-talent-whitepaper-2022-2024",
+  "version": "1",
+  "status": "page-level-evidence-mapped",
+  "reviewStatus": "agent-reviewed-editorial-signoff-pending",
+  "pageNumberConvention": "PDF physical page numbers; printed page numbers are not substituted when the source has front matter",
+  "sources": [
+    {
+      "sourceId": "REPORT-2022",
+      "year": 2022,
+      "fingerprintFile": "source-fingerprints.json",
+      "fileName": "【2022】【内参版】网络安全人才实战能力白皮书.pdf",
+      "pageCount": 96
+    },
+    {
+      "sourceId": "REPORT-2023",
+      "year": 2023,
+      "fingerprintFile": "source-fingerprints.json",
+      "fileName": "【2023】网络安全人才实战能力白皮书-人才评价篇.pdf",
+      "pageCount": 114
+    },
+    {
+      "sourceId": "REPORT-2024",
+      "year": 2024,
+      "fingerprintFile": "source-fingerprints.json",
+      "fileName": "【2024】《网络安全人才实战能力白皮书——安全测试评估篇》.pdf",
+      "pageCount": 134
+    }
+  ],
+  "rules": [
+    {
+      "id": "STYLE-01",
+      "evidenceType": "chapter-opening-and-conclusion",
+      "summary": "章节先陈述行业问题或判断，再交代分析范围、方法和后续结构；结尾再以数据或分析结果收束。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[20,21],"summary":"先提出 4+3 能力框架及攻防实战的重要性，再说明后续章节以竞赛数据展开分析。"},
+        {"sourceId":"REPORT-2023","pdfPages":[11,17],"summary":"第一章先提出人才评价改革问题，第二章开篇先给出人才缺口和评价目标，再进入对象分析。"},
+        {"sourceId":"REPORT-2024","pdfPages":[13],"summary":"第一章开篇先给出测评环境和风险判断，再说明本章覆盖政策法规、人才状况与挑战。"}
+      ],
+      "scope": "用于判断段落是否把背景堆在核心判断之前；不要求每一段都使用相同句式。"
+    },
+    {
+      "id": "STYLE-02",
+      "evidenceType": "bounded-introduction",
+      "summary": "章节导语通常在有限篇幅内完成问题界定、研究范围和分析动作，然后进入数据或政策分析。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[21],"summary":"在提出攻防实战能力定义和重要性后，直接交代竞赛数据样本及分析任务。"},
+        {"sourceId":"REPORT-2023","pdfPages":[17],"summary":"用人单位章节用短导语交代调研对象、分析内容和用途，随后进入 2.1。"},
+        {"sourceId":"REPORT-2024","pdfPages":[13],"summary":"第一章导语完成测评场景、章节任务和服务对象界定后，立即进入政策法规。"}
+      ],
+      "scope": "只有当铺垫不增加问题定义、证据边界或必要过渡时才提出压缩意见。"
+    },
+    {
+      "id": "STYLE-03",
+      "evidenceType": "formal-research-register",
+      "summary": "历史母本使用研究报告语体，围绕政策、评价方法、岗位和数据展开，避免把宣传口号当作分析结论。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[77,78],"summary":"以主流评价方式、有效评价方式和评价局限组织论证，区分实践性、学术性与相对评价。"},
+        {"sourceId":"REPORT-2023","pdfPages":[13,15,16],"summary":"按政策、认证和评价方法分析现状与问题，使用对象、维度、机制和持续性等研究概念。"},
+        {"sourceId":"REPORT-2024","pdfPages":[13,14,15],"summary":"按国家和地区政策法规的时间线展开测评制度分析，并说明制度作用和适用对象。"}
+      ],
+      "scope": "不得因个人偏好改写正常的行业术语；需指出具体宣传化词语及其证据缺口。"
+    },
+    {
+      "id": "STYLE-04",
+      "evidenceType": "sample-and-method-boundary",
+      "summary": "调研结论需要交代样本、数据类型或研究范围，不能把受访样本直接外推为全国事实。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[21],"summary":"明确以网络安全竞赛数据为样本，并交代地域覆盖范围后再进入现状分析。"},
+        {"sourceId":"REPORT-2023","pdfPages":[5,17],"summary":"前言和章节导语交代问卷、竞赛数据、从业人员及用人单位调研对象。"},
+        {"sourceId":"REPORT-2024","pdfPages":[5,6],"summary":"前言说明问卷、人才测评演练数据及政产学研用参与方式，再提出安全测评判断。"}
+      ],
+      "scope": "当当前稿件已有明确样本和外推边界时，不得重复提出该意见；缺少来源时优先要求核验而非补写确定数字。"
+    },
+    {
+      "id": "STYLE-05",
+      "evidenceType": "chapter-question-and-progression",
+      "summary": "章节围绕一个可识别的主问题组织，二级和三级标题沿同一问题递进，不跨章节抢结论。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[20,21],"summary":"从能力模型收束到攻防实战能力，再按现状、数据和评价展开。"},
+        {"sourceId":"REPORT-2023","pdfPages":[7,8,9,10,11],"summary":"目录按评价状况、用人单位、院校、体系、评价模型和建议分章，章节内部保持连续层级。"},
+        {"sourceId":"REPORT-2024","pdfPages":[7,8,9,10,11,12,13],"summary":"目录和第一章开篇将安全测评政策、人才现状、能力评价和指导建议分层组织。"}
+      ],
+      "scope": "只有出现主问题漂移、远距章节结论提前出现或标题层级无法解释时才批注。"
+    },
+    {
+      "id": "STYLE-06",
+      "evidenceType": "numbered-hierarchy",
+      "summary": "系列报告稳定使用章、节、三级小节编号，编号同时承担导航和论证层级作用。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[77,78],"summary":"明确出现 5.1、5.1.1、5.1.2，并以三级小节区分评价方式。"},
+        {"sourceId":"REPORT-2023","pdfPages":[7,8,9,10],"summary":"目录连续列出 1.1.1、2.2.3、3.2.1、4.3.2 等多级标题。"},
+        {"sourceId":"REPORT-2024","pdfPages":[7,8,9,10,11,12],"summary":"目录连续列出 1.1.1、3.1.2、4.3.4、6.4.2 等层级标题。"}
+      ],
+      "scope": "编号建议必须基于当前目录和相邻标题核验，不能只因标题格式与旧稿不同就要求改回。"
+    },
+    {
+      "id": "STYLE-07",
+      "evidenceType": "claim-evidence-link",
+      "summary": "判断通常紧跟数据、政策、样本或方法依据，并在综述或结论处保留判断边界。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[48],"summary":"使用“综上数据表明”收束前文统计，并将结论限定在人才培养和发展趋势。"},
+        {"sourceId":"REPORT-2023","pdfPages":[18,19,20],"summary":"行业分布、学历、年龄和地域判断紧跟图表或统计口径。"},
+        {"sourceId":"REPORT-2024","pdfPages":[14,15],"summary":"政策判断按法规名称、年份、机构和具体制度动作展开，避免无来源的宏观断言。"}
+      ],
+      "scope": "批注必须指出哪一个判断缺少哪一种证据或边界；不能泛泛要求“增加数据”。"
+    },
+    {
+      "id": "STYLE-08",
+      "evidenceType": "subject-mechanism-evidence",
+      "summary": "历史母本的有效表达倾向于写明主体、机制、对象和结果，用可核验内容替代空泛的“全面赋能”式表述。",
+      "evidence": [
+        {"sourceId":"REPORT-2022","pdfPages":[17,21],"summary":"围绕企业需求、人才实战能力和竞赛样本说明问题机制与影响。"},
+        {"sourceId":"REPORT-2023","pdfPages":[5,6],"summary":"前言用研究对象、数据规模、评价模型和使用场景说明白皮书价值。"},
+        {"sourceId":"REPORT-2024","pdfPages":[5,6],"summary":"围绕数字化设备、风险暴露面、安全测试评估和人才能力要求建立因果链。"}
+      ],
+      "scope": "这是正向表达证据，不证明历史母本从未出现空泛词；只有当前词语缺少主体、机制或证据时才提出修改。"
+    }
+  ]
+}

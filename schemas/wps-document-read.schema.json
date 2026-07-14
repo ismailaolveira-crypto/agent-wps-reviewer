@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-wps-reviewer.local/schemas/wps-document-read.schema.json",
+  "title": "Read WPS document chunk",
+  "description": "Read one request-scoped text chunk from a WPS Writer document that was previously returned by get_active_wps_document.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "documentHandle": {
+      "type": "string",
+      "description": "Document handle returned by get_active_wps_document.",
+      "minLength": 1
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Zero-based character offset for the requested chunk."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32000,
+      "default": 32000,
+      "description": "Maximum characters to return. The bridge caps this at 32000."
+    }
+  },
+  "required": ["documentHandle"]
+}
