@@ -1050,7 +1050,7 @@ npm run validate:windows-install          ok: true
 npm run validate:windows-autostart         ok: true
 npm run check:url-consistency              5/5 passed
 npm run acceptance:audit                   backgroundReady=true; completed=false
-GitHub Actions run 29388017981            verify / Windows Node 20 / Windows Node 22 / macOS all passed
+GitHub Actions run 29388274824            verify / Windows Node 20 / Windows Node 22 / macOS all passed
 git diff --check                          passed
 node --check（全部修改的 .mjs）            passed
 ```
@@ -1068,7 +1068,7 @@ sha256: fccf215656e5896031f58d34f189435c42351de96d643744e6b09d0a18ea69d3
 ### 尚未验证、不得宣称完成
 
 - 本机是 macOS，未在 Windows 标准用户账户上执行真实安装、卸载、重装和登录自启动。
-- GitHub Actions run `29388017981` 已在 `windows-latest` 的 Node 20/22 矩阵通过，并同时通过 Ubuntu release-install 与 macOS runtime regression；这仍不能替代真实 WPS 实机验收。
+- GitHub Actions run `29388274824` 已在 `windows-latest` 的 Node 20/22 矩阵通过，并同时通过 Ubuntu release-install 与 macOS runtime regression；这仍不能替代真实 WPS 实机验收。
 - 未在 Windows WPS 实机中完成真实 TaskPane 加载、目标定位、原生批注创建、撤销恢复和多文档切换。
 - `wps:publish` 已提供锁定 `wpsjs@2.2.3` 的调用适配和 `publishReady/trustPending` 状态，但本机未安装/运行真实 `wpsjs publish`，因此没有把 `publish.html` 当作已信任证据。
 - 未验证不同 WPS Windows 版本、ARM/x86 架构和企业策略环境；这些属于发布前矩阵。
