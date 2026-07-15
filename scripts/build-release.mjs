@@ -78,6 +78,7 @@ export const REQUIRED_RELEASE_FILES = [
   'schemas/wps-suggestion-payload.schema.json',
   'scripts/acceptance-status.mjs',
   'scripts/create-acceptance-kit.mjs',
+  'scripts/create-novice-install-kit.mjs',
   'scripts/prepare-foreground-acceptance.mjs',
   'scripts/record-manual-acceptance.mjs',
   'scripts/record-novice-install.mjs',

@@ -43,6 +43,7 @@
     "send:development-fixture": "node bin/wps-suggest.mjs --file examples/development-legacy-suggestion.json",
     "acceptance:kit": "node scripts/create-acceptance-kit.mjs",
     "acceptance:prepare": "node scripts/prepare-foreground-acceptance.mjs",
+    "acceptance:novice-kit": "node scripts/create-novice-install-kit.mjs",
     "acceptance:record": "node scripts/record-manual-acceptance.mjs",
     "acceptance:record-novice": "node scripts/record-novice-install.mjs",
     "acceptance:validate-manual": "node scripts/validate-manual-acceptance.mjs",

@@ -76,12 +76,21 @@ official publish/trust, logon autostart, MCP discovery, uninstall, reinstall,
 and a path containing spaces or Chinese characters. Each step needs a proof
 file and is bound to the current release SHA-256 and runtime identity.
 
-After collecting the step transcripts/proof files into a JSON file shaped as
-`{"steps":[...]}`, record it with:
+Create a pending step template first, then replace each pending entry with the
+real transcript/proof after the corresponding Windows action has passed:
+
+```bash
+npm run acceptance:novice-kit
+```
+
+The template is written to
+`output/windows-probe/novice-install/novice-steps.json`; its proof paths are
+intentionally missing until the tester supplies real evidence. After collecting
+the step transcripts/proof files into that JSON file, record it with:
 
 ```bash
 npm run acceptance:record-novice -- \
-  --steps-file output/windows-probe/novice-steps.json \
+  --steps-file output/windows-probe/novice-install/novice-steps.json \
   --release-sha256 <release-sha256> \
   --os-version "Windows 11 24H2 build 26100" \
   --os-arch x64 \

@@ -1041,11 +1041,12 @@ Windows 真实 WPS 验收必须等用户在 Windows 测试机上明确允许。
 - `setup.cmd` 现在实际检查 Node 20+，`scripts/setup.mjs` 在安装后运行 doctor；增加 `autostart:*`、Windows 安装/自启动验证命令和 `wps:publish` 官方工具适配器。
 - Windows 验收事件和人工证据增加 `platform`、OS/WPS 架构及 `runtimeInstanceId` 字段；audit 明确区分后台就绪、平台前台验收、新手安装和可晋级状态。
 - 新增 `src/acceptance/noviceInstallEvidence.mjs`、`scripts/record-novice-install.mjs` 和 `npm run acceptance:record-novice`；Windows 的 `completed` 不再依赖硬编码布尔值，而是要求独立标准用户、无协助、非管理员完成 8 个安装/信任/自启动/MCP/卸载/重装/特殊路径步骤，并为每步提供可读证明文件。
+- 新增 `npm run acceptance:novice-kit`，先生成带 8 个 `pending` 步骤和缺失 proof 路径的模板；模板不会被误当作验收证据，Luna 必须用真实 Windows 输出替换后再运行 recorder。
 
 ### 已验证
 
 ```text
-npm test                                  283 passed, 0 failed
+npm test                                  284 passed, 0 failed
 npm run validate:release-install          ok: true
 npm run validate:windows-install          ok: true
 npm run validate:windows-autostart         ok: true
@@ -1064,8 +1065,8 @@ node --check（全部修改的 .mjs）            passed
 version: 0.2.0
 channel: beta
 productionReady: false
-fileCount: 124
-sha256: 0c9942b9f674f4299918931e5e84ea17f85e8bd11dcf39e1930fd4f8e73e17b2
+fileCount: 125
+sha256: 3765f8914936116c18637dc6ac61258df321139dffd305f35644b27290381166
 ```
 
 ### 尚未验证、不得宣称完成
