@@ -5,6 +5,7 @@ import { once } from 'node:events';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadManualEvidence, REQUIRED_MANUAL_CHECKS } from './manualEvidence.mjs';
+import { defaultNoviceInstallEvidencePath, loadNoviceInstallEvidence } from './noviceInstallEvidence.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const PROJECT_ROOT = path.resolve(__dirname, '../..');
@@ -312,6 +313,7 @@ export async function runAcceptanceAudit({
   includeManualGates = true,
   manualEvidenceFile = undefined,
   acceptanceEventStorePath = undefined,
+  noviceInstallEvidenceFile = undefined,
   platform = process.platform
 } = {}) {
   const startedAt = new Date().toISOString();
@@ -326,6 +328,10 @@ export async function runAcceptanceAudit({
   const manualEvidence = includeManualGates
     ? await loadManualEvidence({ filePath: manualEvidenceFile, acceptanceEventStorePath })
     : { ok: true, status: 'skipped', checks: [] };
+  const noviceInstallEvidence = await loadNoviceInstallEvidence({
+    filePath: noviceInstallEvidenceFile || defaultNoviceInstallEvidencePath(),
+    projectRoot: PROJECT_ROOT
+  });
   const manual = includeManualGates ? manualEvidence.checks : [];
   const failed = results.filter((item) => item.status !== 'passed');
   const manualRequired = manual.filter((item) => item.status !== 'passed').length;
@@ -342,8 +348,10 @@ export async function runAcceptanceAudit({
   );
   // This is intentionally not inferred from automated setup. It is a separate
   // human gate for a clean standard-user install by someone outside the team.
-  const noviceInstallAccepted = false;
-  const completed = backgroundReady && manualRequired === 0 && platformForegroundAccepted;
+  const noviceInstallAccepted = platform === 'win32' && noviceInstallEvidence.ok === true;
+  const completed = backgroundReady && manualRequired === 0 && platformForegroundAccepted && (
+    platform !== 'win32' || noviceInstallAccepted
+  );
   const releasePromotable = completed && noviceInstallAccepted && packageManifest?.release?.productionReady === true;
 
   return {
@@ -372,6 +380,12 @@ export async function runAcceptanceAudit({
           errors: manualEvidence.errors
         }
       : null,
+    noviceInstallEvidence: {
+      ok: noviceInstallEvidence.ok,
+      status: noviceInstallEvidence.status,
+      filePath: noviceInstallEvidence.filePath,
+      errors: noviceInstallEvidence.errors
+    },
     release: packageManifest
       ? {
           name: packageManifest.name,

@@ -11,6 +11,7 @@ import {
 } from '../src/acceptance/audit.mjs';
 import { writeManualEvidence } from '../src/acceptance/manualEvidence.mjs';
 import { getRuntimeIdentity } from '../src/acceptance/runtimeIdentity.mjs';
+import { REQUIRED_NOVICE_INSTALL_STEPS, writeNoviceInstallEvidence } from '../src/acceptance/noviceInstallEvidence.mjs';
 
 const runtimeIdentity = getRuntimeIdentity();
 
@@ -505,6 +506,70 @@ test('runAcceptanceAudit can complete manual gates from real WPS acceptance even
     assert.equal(audit.completed, true);
     assert.equal(audit.summary.manualRequired, 0);
     assert.match(audit.manualEvidence.filePath, /review-store\.json$/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('Windows completion requires a separately recorded novice install evidence file', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'wps-audit-windows-novice-'));
+  const manualEvidenceFile = path.join(dir, 'manual.json');
+  const stepsFile = path.join(dir, 'steps.json');
+  const noviceEvidenceFile = path.join(dir, 'novice.json');
+  try {
+    const steps = [];
+    for (const [index, required] of REQUIRED_NOVICE_INSTALL_STEPS.entries()) {
+      const proofFile = path.join(dir, `${index}-${required.id}.log`);
+      await writeFile(proofFile, 'passed\n');
+      steps.push({ id: required.id, status: 'passed', evidence: `${required.label} passed independently.`, proofFiles: [proofFile] });
+    }
+    await writeFile(stepsFile, JSON.stringify({ steps }, null, 2));
+    await writeManualEvidence({
+      filePath: manualEvidenceFile,
+      wpsVersion: '12.1.25895',
+      documentPath: 'C:\\Users\\reviewer\\acceptance.docx',
+      platform: 'win32',
+      osVersion: 'Windows 11 24H2 build 26100',
+      osArch: 'x64',
+      wpsArch: 'x64',
+      runtimeInstanceId: 'runtime-test-12345678',
+      taskpaneEvidence: 'Real WPS task pane was visible.',
+      mutationEvidence: 'Real WPS comment was created without changing body text.'
+    });
+    await writeNoviceInstallEvidence({
+      filePath: noviceEvidenceFile,
+      stepsFile,
+      releaseSha256: 'b'.repeat(64),
+      osVersion: 'Windows 11 24H2 build 26100',
+      osArch: 'x64',
+      wpsArch: 'x64',
+      runtimeInstanceId: 'runtime-test-12345678',
+      operator: 'independent tester',
+      independentReviewer: true,
+      unassisted: true,
+      standardUser: true,
+      administrator: false,
+      wpsTrusted: true,
+      mcpClient: 'codex',
+      runtimeIdentity
+    });
+
+    const audit = await runAcceptanceAudit({
+      platform: 'win32',
+      manualEvidenceFile,
+      noviceInstallEvidenceFile: noviceEvidenceFile,
+      gates: [{
+        id: 'synthetic',
+        label: 'Synthetic gate',
+        command: [process.execPath, ['-e', 'console.log("ok")']],
+        proves: 'test harness can run a gate'
+      }]
+    });
+    assert.equal(audit.ok, true);
+    assert.equal(audit.noviceInstallAccepted, true);
+    assert.equal(audit.platformForegroundAccepted, true);
+    assert.equal(audit.completed, true);
+    assert.equal(audit.noviceInstallEvidence.ok, true);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

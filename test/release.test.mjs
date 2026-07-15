@@ -43,7 +43,7 @@ test('release ZIP is reproducible across consecutive builds', async () => {
   const manifest = JSON.parse(await readFile(second.manifestPath, 'utf8'));
   assert.equal(manifest.sha256, second.sha256);
   assert.equal(first.fileCount, second.fileCount);
-  assert.equal(second.fileCount, 122);
+  assert.equal(second.fileCount, 124);
 
   const sourcePath = path.resolve('AGENTS.md');
   const sourceStat = await stat(sourcePath);
@@ -75,7 +75,9 @@ test('release explicitly includes the bundled review skill and formal schemas', 
     'skills/whitepaper-wps-reviewer/references/submission-contract.md',
     'schemas/wps-document-code.schema.json',
     'schemas/wps-suggestion-batch.schema.json',
-    'schemas/wps-legacy-suggestion.schema.json'
+    'schemas/wps-legacy-suggestion.schema.json',
+    'src/acceptance/noviceInstallEvidence.mjs',
+    'scripts/record-novice-install.mjs'
   ]) assert.ok(REQUIRED_RELEASE_FILES.includes(file), `${file} must be explicitly required`);
 });
 

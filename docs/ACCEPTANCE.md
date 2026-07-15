@@ -68,6 +68,38 @@ On Windows, real evidence must additionally include:
 - WPS `wpsArch` (x86/x64/ARM64 or the value reported by the installed WPS build)
 - the bridge `runtimeInstanceId`
 
+Windows Beta completion also requires a separate novice-install record. WPS
+foreground evidence alone cannot set `noviceInstallAccepted=true`. The record
+must be produced by an independent tester who used a standard, non-admin
+account without developer assistance, and must cover clean install, doctor,
+official publish/trust, logon autostart, MCP discovery, uninstall, reinstall,
+and a path containing spaces or Chinese characters. Each step needs a proof
+file and is bound to the current release SHA-256 and runtime identity.
+
+After collecting the step transcripts/proof files into a JSON file shaped as
+`{"steps":[...]}`, record it with:
+
+```bash
+npm run acceptance:record-novice -- \
+  --steps-file output/windows-probe/novice-steps.json \
+  --release-sha256 <release-sha256> \
+  --os-version "Windows 11 24H2 build 26100" \
+  --os-arch x64 \
+  --wps-arch x64 \
+  --runtime-instance-id <bridge-runtime-instance-id> \
+  --operator "independent tester" \
+  --independent-reviewer true \
+  --unassisted true \
+  --standard-user true \
+  --administrator false \
+  --wps-trusted true \
+  --mcp-client codex
+```
+
+This writes `output/novice-install-acceptance.json`. Run
+`npm run acceptance:audit -- --platform win32` afterward; the audit rejects
+missing, stale, macOS, mock, or incomplete novice evidence.
+
 The Windows installer reports `publishReady`, `wpsTrustPending`, and `wpsTrusted` separately. A written `publish.xml` is not evidence that WPS has completed its official trust installation.
 
 After the manual WPS check, stop the local bridge if it should not keep running:

@@ -1027,7 +1027,7 @@ Windows 真实 WPS 验收必须等用户在 Windows 测试机上明确允许。
 
 ## 12. 本轮执行记录（2026-07-15）
 
-本轮已完成 A -> G 的后台/安装工程落地并补充 H 的验收数据契约；H 的真实 Windows WPS 实机步骤仍待 Luna 在 Windows 测试机执行。以下记录只描述已取得的证据，不替代 Windows 实机验收。
+本轮已完成 A -> G 的后台/安装工程落地，并把 H 的新手安装证据契约接入 recorder/audit；H 的真实 Windows WPS 实机步骤仍待 Luna 在 Windows 测试机执行。以下记录只描述已取得的证据，不替代 Windows 实机验收。
 
 ### 已落地
 
@@ -1040,11 +1040,12 @@ Windows 真实 WPS 验收必须等用户在 Windows 测试机上明确允许。
 - 增加 Windows 稳定目录事务：`app.next`/`app.previous` 交换、失败回滚和用户级目录 fixture 验证；Task Scheduler 改为调用受控 `wps-bridge-control.mjs start`，保持运行实例身份链。
 - `setup.cmd` 现在实际检查 Node 20+，`scripts/setup.mjs` 在安装后运行 doctor；增加 `autostart:*`、Windows 安装/自启动验证命令和 `wps:publish` 官方工具适配器。
 - Windows 验收事件和人工证据增加 `platform`、OS/WPS 架构及 `runtimeInstanceId` 字段；audit 明确区分后台就绪、平台前台验收、新手安装和可晋级状态。
+- 新增 `src/acceptance/noviceInstallEvidence.mjs`、`scripts/record-novice-install.mjs` 和 `npm run acceptance:record-novice`；Windows 的 `completed` 不再依赖硬编码布尔值，而是要求独立标准用户、无协助、非管理员完成 8 个安装/信任/自启动/MCP/卸载/重装/特殊路径步骤，并为每步提供可读证明文件。
 
 ### 已验证
 
 ```text
-npm test                                  281 passed, 0 failed
+npm test                                  283 passed, 0 failed
 npm run validate:release-install          ok: true
 npm run validate:windows-install          ok: true
 npm run validate:windows-autostart         ok: true
@@ -1061,8 +1062,8 @@ node --check（全部修改的 .mjs）            passed
 version: 0.2.0
 channel: beta
 productionReady: false
-fileCount: 122
-sha256: 80bf3f88ba18c61ebfedb28feefc71c8c82c7889e79b348267fccecd3b88fb7c
+fileCount: 124
+sha256: 0c9942b9f674f4299918931e5e84ea17f85e8bd11dcf39e1930fd4f8e73e17b2
 ```
 
 ### 尚未验证、不得宣称完成
@@ -1070,6 +1071,7 @@ sha256: 80bf3f88ba18c61ebfedb28feefc71c8c82c7889e79b348267fccecd3b88fb7c
 - 本机是 macOS，未在 Windows 标准用户账户上执行真实安装、卸载、重装和登录自启动。
 - GitHub Actions run `29388274824` 已在 `windows-latest` 的 Node 20/22 矩阵通过，并同时通过 Ubuntu release-install 与 macOS runtime regression；这仍不能替代真实 WPS 实机验收。
 - 未在 Windows WPS 实机中完成真实 TaskPane 加载、目标定位、原生批注创建、撤销恢复和多文档切换。
+- 尚未收到独立测试者的 `output/novice-install-acceptance.json`；因此 Windows `acceptance:audit --platform win32` 仍应保持 `noviceInstallAccepted=false`，不能宣称无协助新手安装门禁通过。
 - `wps:publish` 已提供锁定 `wpsjs@2.2.3` 的调用适配和 `publishReady/trustPending` 状态，但本机未安装/运行真实 `wpsjs publish`，因此没有把 `publish.html` 当作已信任证据。
 - 未验证不同 WPS Windows 版本、ARM/x86 架构和企业策略环境；这些属于发布前矩阵。
 - 当前 release manifest 必须继续保持 `beta`，Word 修订和 PDF 复刻仍为 `disabled`。

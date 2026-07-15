@@ -173,6 +173,9 @@ npm run acceptance:audit
 npm run release
 ```
 
+Windows Beta 还需要独立测试者在标准用户账户完成新手无协助安装，并用
+`npm run acceptance:record-novice -- --steps-file ...` 记录安装、信任、自启动、MCP、卸载和重装证据；仅有 WPS 侧栏批注事件不会通过该门禁。
+
 测试覆盖：
 
 - 文档锚点定位与重复片段 disambiguation

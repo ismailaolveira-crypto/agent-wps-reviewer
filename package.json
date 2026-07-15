@@ -44,6 +44,7 @@
     "acceptance:kit": "node scripts/create-acceptance-kit.mjs",
     "acceptance:prepare": "node scripts/prepare-foreground-acceptance.mjs",
     "acceptance:record": "node scripts/record-manual-acceptance.mjs",
+    "acceptance:record-novice": "node scripts/record-novice-install.mjs",
     "acceptance:validate-manual": "node scripts/validate-manual-acceptance.mjs",
     "acceptance:wait": "node scripts/wait-manual-acceptance.mjs",
     "acceptance:status": "node scripts/acceptance-status.mjs",
