@@ -61,7 +61,10 @@ test('runWpsDiagnostics flags a disabled WPS add-in authorization', async () => 
 
     assert.equal(diagnostics.ok, false);
     assert.equal(diagnostics.auth.disabled, true);
-    assert.ok(diagnostics.recommendations.some((item) => item.includes('wps:authorize')));
+    const authorizationRecommendation = process.platform === 'win32'
+      ? diagnostics.recommendations.some((item) => item.includes('publish/trust'))
+      : diagnostics.recommendations.some((item) => item.includes('wps:authorize'));
+    assert.equal(authorizationRecommendation, true);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -117,6 +120,22 @@ test('runWpsDiagnostics reports bridge health when supplied', async () => {
 
     assert.equal(diagnostics.bridge.checked, true);
     assert.equal(diagnostics.bridge.running, false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('runWpsDiagnostics handles non-macOS and non-Windows hosts without WPS path assumptions', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'wps-diagnostics-linux-'));
+  try {
+    const diagnostics = await runWpsDiagnostics({
+      platform: 'linux',
+      jsaddonsDir: dir,
+      checkBridge: false,
+      checkProcess: false
+    });
+    assert.equal(diagnostics.wpsApp.exists, false);
+    assert.equal(diagnostics.wpsApp.path, '');
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

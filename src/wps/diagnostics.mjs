@@ -64,6 +64,9 @@ async function getWpsAppInfo(wpsAppPath, { platform = process.platform, env = pr
     }
     return { path: wpsAppPath || candidates[0] || '', exists: false, version: '', build: '', discovery: discovered.length ? 'where.exe' : 'known-paths' };
   }
+  if (platform !== 'darwin') {
+    return { path: wpsAppPath || '', exists: false, version: '', build: '' };
+  }
   const infoPath = path.join(wpsAppPath, 'Contents/Info.plist');
   const exists = existsSync(wpsAppPath) && existsSync(infoPath);
   if (!exists) {

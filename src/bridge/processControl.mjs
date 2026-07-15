@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { openSync } from 'node:fs';
+import { closeSync, openSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -208,23 +208,30 @@ export async function startBridge(options = {}) {
   await mkdir(resolved.dataDir, { recursive: true });
 
   const logFd = openSync(resolved.logFile, 'a');
-  const child = spawn(resolved.nodePath, [path.join(resolved.projectRoot, 'src/bridge/server.mjs')], {
-    cwd: resolved.projectRoot,
-    detached: resolved.detached,
-    env: {
-      ...resolved.env,
-      HOST: resolved.host,
-      PORT: String(resolved.port),
-      DATA_DIR: resolved.dataDir,
-      WPS_REVIEWER_OWNER_KIND: resolved.ownerKind,
-      WPS_REVIEWER_AGENT_TOKEN: resolved.agentToken,
-      WPS_REVIEWER_AGENT_TOKEN_FILE: resolved.agentTokenPath,
-      WPS_REVIEWER_ALLOW_LEGACY_SUBMIT: resolved.allowLegacySubmission ? '1' : '0',
-      WPS_REVIEWER_RUNTIME_INSTANCE_ID: resolved.runtimeInstanceId
-    },
-    windowsHide: resolved.platform === 'win32',
-    stdio: ['ignore', logFd, logFd]
-  });
+  let child;
+  try {
+    child = spawn(resolved.nodePath, [path.join(resolved.projectRoot, 'src/bridge/server.mjs')], {
+      cwd: resolved.projectRoot,
+      detached: resolved.detached,
+      env: {
+        ...resolved.env,
+        HOST: resolved.host,
+        PORT: String(resolved.port),
+        DATA_DIR: resolved.dataDir,
+        WPS_REVIEWER_OWNER_KIND: resolved.ownerKind,
+        WPS_REVIEWER_AGENT_TOKEN: resolved.agentToken,
+        WPS_REVIEWER_AGENT_TOKEN_FILE: resolved.agentTokenPath,
+        WPS_REVIEWER_ALLOW_LEGACY_SUBMIT: resolved.allowLegacySubmission ? '1' : '0',
+        WPS_REVIEWER_RUNTIME_INSTANCE_ID: resolved.runtimeInstanceId
+      },
+      windowsHide: resolved.platform === 'win32',
+      stdio: ['ignore', logFd, logFd]
+    });
+  } finally {
+    // Keep the descriptor only in the bridge child. Windows refuses to remove
+    // a log file while the parent process still owns an open handle.
+    closeSync(logFd);
+  }
 
   await writeFile(resolved.pidFile, `${JSON.stringify({
     pid: child.pid,
