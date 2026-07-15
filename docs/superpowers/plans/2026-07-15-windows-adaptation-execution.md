@@ -1061,7 +1061,7 @@ version: 0.2.0
 channel: beta
 productionReady: false
 fileCount: 122
-sha256: ec5d59888e11779d212620c9b9c1ac9905db98354dc7be1c10c4cc536dea9365
+sha256: 6e075563b538600d354509353239b77bdd9ca6614ee3440bbe7ccec15901822c
 ```
 
 ### 尚未验证、不得宣称完成

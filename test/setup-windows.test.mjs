@@ -14,5 +14,6 @@ test('Windows setup entry checks Node version and delegates to the transactional
   assert.match(cmd, /scripts\\setup\.mjs/);
   assert.match(setup, /installStableWindowsBundle/);
   assert.match(setup, /runDoctor/);
+  assert.match(setup, /agentToken\?\.tokenPath/);
   assert.match(setup, /WPS_REVIEWER_STABLE_BOOTSTRAPPED/);
 });

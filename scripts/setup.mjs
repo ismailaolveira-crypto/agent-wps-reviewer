@@ -79,7 +79,10 @@ async function main() {
       platform: process.platform,
       jsaddonsDir: args.jsaddonsDir,
       skillRoots: args.skillTargetRoots,
-      bridgeOptions: args.port ? { port: args.port } : {},
+      bridgeOptions: {
+        ...(args.port ? { port: args.port } : {}),
+        ...(result.agentToken?.tokenPath ? { agentTokenPath: result.agentToken.tokenPath } : {})
+      },
       checkLaunchAgent: true
     });
     console.log(JSON.stringify(doctor, null, 2));
