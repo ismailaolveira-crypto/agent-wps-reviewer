@@ -1044,7 +1044,7 @@ Windows 真实 WPS 验收必须等用户在 Windows 测试机上明确允许。
 ### 已验证
 
 ```text
-npm test                                  280 passed, 0 failed
+npm test                                  281 passed, 0 failed
 npm run validate:release-install          ok: true
 npm run validate:windows-install          ok: true
 npm run validate:windows-autostart         ok: true
