@@ -23,9 +23,10 @@ export function defaultAgentTokenPath({
       }
     }), 'agent-token');
   }
-  return platform === 'darwin'
-    ? path.join(homeDir, 'Library/Application Support/Agent WPS Reviewer/agent-token')
-    : path.join(homeDir, '.config/agent-wps-reviewer/agent-token');
+  return path.join(defaultProductDataDir({
+    platform,
+    env: { ...process.env, HOME: homeDir, USERPROFILE: homeDir }
+  }), 'agent-token');
 }
 
 export function resolveAgentTokenPath(tokenPath = process.env[TOKEN_ENV]) {

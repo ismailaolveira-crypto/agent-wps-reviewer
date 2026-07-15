@@ -41,7 +41,7 @@ test('agent token path resolution supports explicit files and platform defaults'
   );
   assert.equal(
     defaultAgentTokenPath({ homeDir: '/tmp/home', platform: 'linux' }),
-    '/tmp/home/.config/agent-wps-reviewer/agent-token'
+    '/tmp/home/Library/Application Support/Agent WPS Reviewer/agent-token'
   );
   assert.equal(
     defaultAgentTokenPath({ homeDir: 'C:\\Users\\reviewer', platform: 'win32' }),
