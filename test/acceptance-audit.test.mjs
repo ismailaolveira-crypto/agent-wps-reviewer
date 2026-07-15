@@ -392,6 +392,10 @@ test('runAcceptanceAudit does not mark product completed without manual WPS gate
 
     assert.equal(audit.ok, true);
     assert.equal(audit.completed, false);
+    assert.equal(audit.backgroundReady, true);
+    assert.equal(audit.platformForegroundAccepted, false);
+    assert.equal(audit.noviceInstallAccepted, false);
+    assert.equal(audit.releasePromotable, false);
     assert.equal(audit.summary.passed, 1);
     assert.equal(audit.summary.manualRequired, 2);
     assert.equal(audit.manualGates.every((gate) => gate.status === 'manual_required'), true);

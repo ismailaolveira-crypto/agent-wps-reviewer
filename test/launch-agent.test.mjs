@@ -73,6 +73,8 @@ test('launch-agent bridge writes a managed pid file and removes it on shutdown',
     const record = JSON.parse(await readFile(pidFile, 'utf8'));
     assert.equal(record.pid, child.pid);
     assert.equal(record.port, port);
+    assert.match(record.runtimeInstanceId, /^[0-9a-f-]{36}$/i);
+    assert.equal(typeof record.buildFingerprint, 'string');
 
     child.kill('SIGTERM');
     await once(child, 'exit');

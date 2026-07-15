@@ -27,11 +27,13 @@ if (args.command === 'help' || args.command === '--help') {
 }
 
 const options = {
+  host: args.host,
   port: args.port ? Number(args.port) : undefined,
   runtimeDir: args['runtime-dir'],
   dataDir: args['data-dir'],
   pidFile: args['pid-file'],
-  logFile: args['log-file']
+  logFile: args['log-file'],
+  agentTokenPath: args['agent-token-file']
 };
 
 let result;

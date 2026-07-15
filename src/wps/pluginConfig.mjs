@@ -1,17 +1,16 @@
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { defaultWpsJsaddonsDir, replaceFileAtomic } from '../platform.mjs';
 
 export const DEFAULT_PLUGIN_NAME = 'WpsAgentReviewer';
 export const DEFAULT_PLUGIN_URL = 'http://127.0.0.1:17531/WpsAgentReviewer/';
 
 export function defaultMacJsaddonsDir(homeDir = process.env.HOME) {
-  if (!homeDir) {
-    throw new Error('Cannot resolve HOME for WPS jsaddons directory');
-  }
-  return path.join(
-    homeDir,
-    'Library/Containers/com.kingsoft.wpsoffice.mac/Data/.kingsoft/wps/jsaddons'
-  );
+  return defaultWpsJsaddonsDir({ platform: 'darwin', env: { ...process.env, HOME: homeDir } });
+}
+
+export function defaultJsaddonsDir({ platform = process.platform, env = process.env } = {}) {
+  return defaultWpsJsaddonsDir({ platform, env });
 }
 
 export function buildPluginEntry(pluginUrl = DEFAULT_PLUGIN_URL, pluginName = DEFAULT_PLUGIN_NAME) {
@@ -62,16 +61,9 @@ async function maybeBackup(filePath, enabled) {
   return backupPath;
 }
 
-async function writeAtomic(filePath, content) {
-  await mkdir(path.dirname(filePath), { recursive: true });
-  const tmpPath = `${filePath}.tmp`;
-  await writeFile(tmpPath, content);
-  await rename(tmpPath, filePath);
-}
-
 async function restoreText(filePath, content) {
   if (content) {
-    await writeAtomic(filePath, content);
+    await replaceFileAtomic(filePath, content);
   } else {
     await rm(filePath, { force: true });
   }
@@ -107,15 +99,17 @@ export function removePluginEntry(xml, pluginName = DEFAULT_PLUGIN_NAME) {
 }
 
 export async function installPluginConfig({
-  jsaddonsDir = defaultMacJsaddonsDir(),
+  jsaddonsDir = defaultJsaddonsDir(),
   pluginName = DEFAULT_PLUGIN_NAME,
   pluginUrl = DEFAULT_PLUGIN_URL,
-  backup = true
+  backup = true,
+  platform = process.platform,
+  mode = 'legacy'
 } = {}) {
   const filePath = path.join(jsaddonsDir, 'jsplugins.xml');
   const publishPath = path.join(jsaddonsDir, 'publish.xml');
   const existing = await readExisting(filePath);
-  const next = addPluginEntry(existing, { pluginName, pluginUrl });
+  const next = mode === 'publish' ? existing : addPluginEntry(existing, { pluginName, pluginUrl });
   const publishExisting = await readExisting(publishPath);
   const publishNext = buildPublishXml(pluginUrl, pluginName);
   const changed = existing !== next || publishExisting !== publishNext;
@@ -124,8 +118,8 @@ export async function installPluginConfig({
 
   if (existing !== next) {
     try {
-      await writeAtomic(filePath, next);
-      if (publishExisting !== publishNext) await writeAtomic(publishPath, publishNext);
+      await replaceFileAtomic(filePath, next);
+      if (publishExisting !== publishNext) await replaceFileAtomic(publishPath, publishNext);
     } catch (error) {
       await restoreText(filePath, existing);
       await restoreText(publishPath, publishExisting);
@@ -133,7 +127,7 @@ export async function installPluginConfig({
     }
   } else if (publishExisting !== publishNext) {
     try {
-      await writeAtomic(publishPath, publishNext);
+      await replaceFileAtomic(publishPath, publishNext);
     } catch (error) {
       await restoreText(publishPath, publishExisting);
       throw error;
@@ -147,6 +141,10 @@ export async function installPluginConfig({
     publishBackupPath,
     installed: true,
     changed,
+    platform,
+    mode,
+    publishReady: true,
+    wpsTrustPending: platform === 'win32',
     rollback: async () => {
       await restoreText(filePath, existing);
       await restoreText(publishPath, publishExisting);
@@ -156,9 +154,10 @@ export async function installPluginConfig({
 }
 
 export async function uninstallPluginConfig({
-  jsaddonsDir = defaultMacJsaddonsDir(),
+  jsaddonsDir = defaultJsaddonsDir(),
   pluginName = DEFAULT_PLUGIN_NAME,
-  backup = true
+  backup = true,
+  platform = process.platform
 } = {}) {
   const filePath = path.join(jsaddonsDir, 'jsplugins.xml');
   const publishPath = path.join(jsaddonsDir, 'publish.xml');
@@ -171,10 +170,10 @@ export async function uninstallPluginConfig({
   const publishBackupPath = publishExisting !== publishNext ? await maybeBackup(publishPath, backup) : '';
 
   if (existing !== next) {
-    await writeAtomic(filePath, next.endsWith('\n') ? next : `${next}\n`);
+    await replaceFileAtomic(filePath, next.endsWith('\n') ? next : `${next}\n`);
   }
   if (publishExisting !== publishNext) {
-    await writeAtomic(publishPath, publishNext.endsWith('\n') ? publishNext : `${publishNext}\n`);
+    await replaceFileAtomic(publishPath, publishNext.endsWith('\n') ? publishNext : `${publishNext}\n`);
   }
 
   return {
@@ -183,13 +182,15 @@ export async function uninstallPluginConfig({
     backupPath,
     publishBackupPath,
     installed: false,
-    changed
+    changed,
+    platform
   };
 }
 
 export async function readPluginConfigStatus({
-  jsaddonsDir = defaultMacJsaddonsDir(),
-  pluginName = DEFAULT_PLUGIN_NAME
+  jsaddonsDir = defaultJsaddonsDir(),
+  pluginName = DEFAULT_PLUGIN_NAME,
+  platform = process.platform
 } = {}) {
   const filePath = path.join(jsaddonsDir, 'jsplugins.xml');
   const publishPath = path.join(jsaddonsDir, 'publish.xml');
@@ -202,6 +203,7 @@ export async function readPluginConfigStatus({
     exists: Boolean(existing),
     publishExists: Boolean(publishExisting),
     bytes: Buffer.byteLength(existing),
-    publishBytes: Buffer.byteLength(publishExisting)
+    publishBytes: Buffer.byteLength(publishExisting),
+    platform
   };
 }

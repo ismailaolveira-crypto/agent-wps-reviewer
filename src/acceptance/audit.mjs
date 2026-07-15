@@ -310,7 +310,8 @@ export async function runAcceptanceAudit({
   gates = DEFAULT_GATES,
   includeManualGates = true,
   manualEvidenceFile = undefined,
-  acceptanceEventStorePath = undefined
+  acceptanceEventStorePath = undefined,
+  platform = process.platform
 } = {}) {
   const startedAt = new Date().toISOString();
   const results = [];
@@ -334,9 +335,24 @@ export async function runAcceptanceAudit({
     packageManifest = JSON.parse(await readFile(releaseGate.evidence.manifestPath, 'utf8'));
   }
 
+  const backgroundReady = failed.length === 0;
+  const platformForegroundAccepted = manualRequired === 0 && (
+    platform !== 'win32' || manualEvidence.evidence?.platform === 'win32'
+  );
+  // This is intentionally not inferred from automated setup. It is a separate
+  // human gate for a clean standard-user install by someone outside the team.
+  const noviceInstallAccepted = false;
+  const completed = backgroundReady && manualRequired === 0 && platformForegroundAccepted;
+  const releasePromotable = completed && noviceInstallAccepted && packageManifest?.release?.productionReady === true;
+
   return {
-    ok: failed.length === 0,
-    completed: failed.length === 0 && manualRequired === 0,
+    ok: backgroundReady,
+    completed,
+    platform,
+    backgroundReady,
+    platformForegroundAccepted,
+    noviceInstallAccepted,
+    releasePromotable,
     generatedAt: new Date().toISOString(),
     startedAt,
     projectRoot: PROJECT_ROOT,

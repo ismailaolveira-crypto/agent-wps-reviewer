@@ -73,6 +73,22 @@ test('validateManualEvidence rejects a manual file from another build', () => {
   assert.match(result.errors.join('\n'), /buildFingerprint does not match current runtime/);
 });
 
+test('validateManualEvidence binds Windows evidence to host and WPS architecture', () => {
+  const result = validateManualEvidence({
+    ...runtimeIdentity,
+    platform: 'win32',
+    checkedAt: '2026-07-09T10:00:00.000Z',
+    wpsVersion: '12.1.25895',
+    documentPath: 'C:\\Users\\reviewer\\acceptance.docx',
+    checks: [
+      { id: 'wps-taskpane-visible', status: 'passed', evidence: 'Task pane visible.' },
+      { id: 'wps-comment-flow', status: 'passed', evidence: 'Locate and comment verified.' }
+    ]
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join('\n'), /osVersion|wpsArch|runtimeInstanceId/);
+});
+
 test('writeManualEvidence writes a valid evidence file', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'wps-manual-evidence-'));
   const filePath = path.join(dir, 'manual.json');

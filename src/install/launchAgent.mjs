@@ -1,12 +1,15 @@
 import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { defaultProductFilesDir, defaultProductRuntimeDir, quoteWindowsArgument } from '../platform.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const PROJECT_ROOT = path.resolve(__dirname, '../..');
 export const DEFAULT_LAUNCH_AGENT_LABEL = 'com.agent-wps-reviewer.bridge';
 export const DEFAULT_LAUNCH_AGENT_FILENAME = `${DEFAULT_LAUNCH_AGENT_LABEL}.plist`;
+export const DEFAULT_WINDOWS_TASK_NAME = 'Agent WPS Reviewer Bridge';
 
 export function defaultLaunchAgentsDir(homeDir = process.env.HOME) {
   if (!homeDir) {
@@ -29,6 +32,89 @@ function xmlEscape(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;');
+}
+
+function defaultWindowsTaskRunner(command, args) {
+  const result = spawnSync(command, args, { encoding: 'utf8', windowsHide: true });
+  return {
+    code: result.status,
+    stdout: String(result.stdout || ''),
+    stderr: String(result.stderr || ''),
+    error: result.error || null
+  };
+}
+
+export function buildWindowsTaskArgs({
+  taskName = DEFAULT_WINDOWS_TASK_NAME,
+  nodePath = process.execPath,
+  projectRoot = PROJECT_ROOT,
+  host = '127.0.0.1',
+  port = 17531,
+  dataDir,
+  pidFile,
+  tokenPath = '',
+  env = process.env
+} = {}) {
+  const resolvedDataDir = dataDir || (process.platform === 'win32'
+    ? defaultProductFilesDir({ platform: 'win32', env })
+    : path.join(projectRoot, 'data'));
+  const resolvedPidFile = pidFile || (process.platform === 'win32'
+    ? path.join(defaultProductRuntimeDir({ platform: 'win32', env }), 'bridge.pid')
+    : path.join(resolvedDataDir, 'runtime/bridge.pid'));
+  const controlPath = path.join(projectRoot, 'bin/wps-bridge-control.mjs');
+  const commandArgs = [
+    'start',
+    '--host', host,
+    '--port', port,
+    '--data-dir', resolvedDataDir,
+    '--pid-file', resolvedPidFile
+  ];
+  if (tokenPath) commandArgs.push('--agent-token-file', tokenPath);
+  const command = [quoteWindowsArgument(nodePath), quoteWindowsArgument(controlPath), ...commandArgs.map(quoteWindowsArgument)].join(' ');
+  const taskCommand = `cmd.exe /d /s /c "${command}"`;
+  return {
+    create: ['/Create', '/TN', taskName, '/TR', taskCommand, '/SC', 'ONLOGON', '/RL', 'LIMITED', '/F'],
+    query: ['/Query', '/TN', taskName, '/FO', 'CSV', '/NH'],
+    delete: ['/Delete', '/TN', taskName, '/F'],
+    taskName,
+    command: taskCommand
+  };
+}
+
+function parseWindowsTaskStatus(result, taskName) {
+  const exists = result.error?.code !== 'ENOENT' && result.code === 0;
+  return {
+    exists,
+    taskName,
+    checked: true,
+    status: exists ? 'ready' : 'missing',
+    error: exists ? undefined : String(result.stderr || result.error?.message || '').trim() || undefined
+  };
+}
+
+async function readWindowsTaskStatus({ taskName = DEFAULT_WINDOWS_TASK_NAME, taskRunner = defaultWindowsTaskRunner } = {}) {
+  return parseWindowsTaskStatus(await taskRunner('schtasks.exe', buildWindowsTaskArgs({ taskName }).query), taskName);
+}
+
+async function installWindowsTask({
+  taskName = DEFAULT_WINDOWS_TASK_NAME,
+  taskRunner = defaultWindowsTaskRunner,
+  ...options
+} = {}) {
+  const args = buildWindowsTaskArgs({ taskName, ...options });
+  const result = await taskRunner('schtasks.exe', args.create);
+  const status = await readWindowsTaskStatus({ taskName, taskRunner });
+  return {
+    ok: result.error == null && result.code === 0 && status.exists,
+    loaded: false,
+    platform: 'win32',
+    taskName,
+    status,
+    command: args.command,
+    rollback: async () => {
+      await taskRunner('schtasks.exe', args.delete);
+    }
+  };
 }
 
 function envEntry(key, value) {
@@ -99,22 +185,27 @@ function extractLabel(plistText) {
 }
 
 export async function readLaunchAgentStatus({
-  plistPath = defaultLaunchAgentPath()
+  platform = process.platform,
+  plistPath,
+  taskName = DEFAULT_WINDOWS_TASK_NAME,
+  taskRunner = defaultWindowsTaskRunner
 } = {}) {
-  if (!existsSync(plistPath)) {
+  if (platform === 'win32') return readWindowsTaskStatus({ taskName, taskRunner });
+  const resolvedPlistPath = plistPath || defaultLaunchAgentPath();
+  if (!existsSync(resolvedPlistPath)) {
     return {
       exists: false,
-      plistPath,
+      plistPath: resolvedPlistPath,
       label: null,
       bytes: 0,
       containsLaunchctlInstruction: false
     };
   }
 
-  const plistText = await readFile(plistPath, 'utf8');
+  const plistText = await readFile(resolvedPlistPath, 'utf8');
   return {
     exists: true,
-    plistPath,
+    plistPath: resolvedPlistPath,
     label: extractLabel(plistText),
     bytes: Buffer.byteLength(plistText),
     containsLaunchctlInstruction: plistText.includes('launchctl')
@@ -122,29 +213,55 @@ export async function readLaunchAgentStatus({
 }
 
 export async function installLaunchAgent({
-  launchAgentsDir = defaultLaunchAgentsDir(),
-  plistPath = defaultLaunchAgentPath({ launchAgentsDir }),
+  platform = process.platform,
+  launchAgentsDir,
+  plistPath,
   label = DEFAULT_LAUNCH_AGENT_LABEL,
   nodePath = process.execPath,
   projectRoot = PROJECT_ROOT,
   host = '127.0.0.1',
   port = 17531,
-  dataDir = path.join(projectRoot, 'data'),
-  pidFile = path.join(dataDir, 'runtime/bridge.pid'),
+  dataDir,
+  pidFile,
   stdoutPath = path.join(projectRoot, 'data/runtime/launch-agent.out.log'),
   stderrPath = path.join(projectRoot, 'data/runtime/launch-agent.err.log'),
   agentToken = '',
-  agentTokenPath = ''
+  agentTokenPath = '',
+  taskName = DEFAULT_WINDOWS_TASK_NAME,
+  env = process.env,
+  taskRunner = defaultWindowsTaskRunner
 } = {}) {
+  const resolvedDataDir = dataDir || (platform === 'win32'
+    ? defaultProductFilesDir({ platform, env })
+    : path.join(projectRoot, 'data'));
+  const resolvedPidFile = pidFile || (platform === 'win32'
+    ? path.join(defaultProductRuntimeDir({ platform, env }), 'bridge.pid')
+    : path.join(resolvedDataDir, 'runtime/bridge.pid'));
+  if (platform === 'win32') {
+    return installWindowsTask({
+      taskName,
+      taskRunner,
+      nodePath,
+      projectRoot,
+      host,
+      port,
+      dataDir: resolvedDataDir,
+      pidFile: resolvedPidFile,
+      tokenPath: agentTokenPath,
+      env
+    });
+  }
+  const resolvedLaunchAgentsDir = launchAgentsDir || defaultLaunchAgentsDir();
+  const resolvedPlistPath = plistPath || defaultLaunchAgentPath({ launchAgentsDir: resolvedLaunchAgentsDir, label });
   let previousPlist = null;
   try {
-    previousPlist = await readFile(plistPath, 'utf8');
+    previousPlist = await readFile(resolvedPlistPath, 'utf8');
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
-  await mkdir(path.dirname(plistPath), { recursive: true });
+  await mkdir(path.dirname(resolvedPlistPath), { recursive: true });
   await mkdir(path.dirname(stdoutPath), { recursive: true });
-  await mkdir(dataDir, { recursive: true });
+  await mkdir(resolvedDataDir, { recursive: true });
 
   const plist = buildLaunchAgentPlist({
     label,
@@ -152,38 +269,48 @@ export async function installLaunchAgent({
     projectRoot,
     host,
     port,
-    dataDir,
-    pidFile,
+    dataDir: resolvedDataDir,
+    pidFile: resolvedPidFile,
     stdoutPath,
     stderrPath,
     agentToken,
     agentTokenPath
   });
-  await writeFile(plistPath, plist, 'utf8');
-  const status = await readLaunchAgentStatus({ plistPath });
+  await writeFile(resolvedPlistPath, plist, 'utf8');
+  const status = await readLaunchAgentStatus({ plistPath: resolvedPlistPath });
 
   return {
     ok: status.exists === true && status.label === label,
     loaded: false,
-    plistPath,
-    launchAgentsDir,
+    plistPath: resolvedPlistPath,
+    launchAgentsDir: resolvedLaunchAgentsDir,
     status,
     rollback: async () => {
-      if (previousPlist === null) await rm(plistPath, { force: true });
-      else await writeFile(plistPath, previousPlist, 'utf8');
+      if (previousPlist === null) await rm(resolvedPlistPath, { force: true });
+      else await writeFile(resolvedPlistPath, previousPlist, 'utf8');
     }
   };
 }
 
 export async function uninstallLaunchAgent({
-  plistPath = defaultLaunchAgentPath()
+  platform = process.platform,
+  plistPath,
+  taskName = DEFAULT_WINDOWS_TASK_NAME,
+  taskRunner = defaultWindowsTaskRunner
 } = {}) {
-  await rm(plistPath, { force: true });
-  const status = await readLaunchAgentStatus({ plistPath });
+  if (platform === 'win32') {
+    const args = buildWindowsTaskArgs({ taskName });
+    const result = await taskRunner('schtasks.exe', args.delete);
+    const status = await readWindowsTaskStatus({ taskName, taskRunner });
+    return { ok: result.error == null && (result.code === 0 || !status.exists), loaded: false, platform, taskName, status };
+  }
+  const resolvedPlistPath = plistPath || defaultLaunchAgentPath();
+  await rm(resolvedPlistPath, { force: true });
+  const status = await readLaunchAgentStatus({ plistPath: resolvedPlistPath });
   return {
     ok: status.exists === false,
     loaded: false,
-    plistPath,
+    plistPath: resolvedPlistPath,
     status
   };
 }

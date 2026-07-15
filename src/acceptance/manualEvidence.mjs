@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getRuntimeIdentity } from './runtimeIdentity.mjs';
@@ -60,6 +61,12 @@ export function validateManualEvidence(
   if (!hasUsefulText(evidence?.wpsVersion)) errors.push('wpsVersion is required');
   if (!hasUsefulText(evidence?.documentPath)) errors.push('documentPath is required');
   if (!hasUsefulText(evidence?.checkedAt)) errors.push('checkedAt is required');
+  if (evidence?.platform === 'win32') {
+    if (!hasText(evidence?.osVersion)) errors.push('osVersion is required for Windows evidence');
+    if (!hasText(evidence?.osArch)) errors.push('osArch is required for Windows evidence');
+    if (!hasText(evidence?.wpsArch)) errors.push('wpsArch is required for Windows evidence');
+    if (!hasText(evidence?.runtimeInstanceId)) errors.push('runtimeInstanceId is required for Windows evidence');
+  }
 
   const normalizedChecks = REQUIRED_MANUAL_CHECKS.map((required) => {
     const found = checks.find((item) => item?.id === required.id);
@@ -146,6 +153,11 @@ export function deriveManualEvidenceFromAcceptanceEvents(
     checkedAt,
     productVersion: runtimeIdentity.productVersion,
     buildFingerprint: runtimeIdentity.buildFingerprint,
+    ...(latest.platform ? { platform: latest.platform } : {}),
+    ...(latest.osVersion ? { osVersion: latest.osVersion } : {}),
+    ...(latest.osArch ? { osArch: latest.osArch } : {}),
+    ...(latest.wpsArch ? { wpsArch: latest.wpsArch } : {}),
+    ...(latest.runtimeInstanceId ? { runtimeInstanceId: latest.runtimeInstanceId } : {}),
     wpsVersion,
     documentPath: docTitle,
     bridgeUrl: 'http://127.0.0.1:17531',
@@ -340,6 +352,11 @@ export async function writeManualEvidence({
   documentPath,
   bridgeUrl = 'http://127.0.0.1:17531',
   runtimeIdentity = getRuntimeIdentity(),
+  platform = process.platform,
+  osVersion = os.release(),
+  osArch = process.arch,
+  wpsArch = '',
+  runtimeInstanceId = '',
   taskpaneEvidence,
   mutationEvidence,
   taskpaneProofFiles = [],
@@ -349,6 +366,11 @@ export async function writeManualEvidence({
     checkedAt: new Date().toISOString(),
     productVersion: runtimeIdentity.productVersion,
     buildFingerprint: runtimeIdentity.buildFingerprint,
+    platform,
+    osVersion,
+    osArch,
+    ...(wpsArch ? { wpsArch } : {}),
+    ...(runtimeInstanceId ? { runtimeInstanceId } : {}),
     wpsVersion,
     documentPath,
     bridgeUrl,

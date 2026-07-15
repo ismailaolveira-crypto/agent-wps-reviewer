@@ -1,13 +1,23 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { quoteWindowsArgument, windowsCommandShell } from '../platform.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const PROJECT_ROOT = path.resolve(__dirname, '../..');
 export const DEFAULT_MCP_NAME = 'agent-wps-reviewer';
 
-function runCommand({ command, args, env = process.env, cwd = PROJECT_ROOT, timeoutMs = 10000 }) {
-  const result = spawnSync(command, args, {
+export function quoteWindowsCommandArg(value) {
+  return quoteWindowsArgument(value);
+}
+
+function runCommand({ command, args, env = process.env, cwd = PROJECT_ROOT, timeoutMs = 10000, platform = process.platform }) {
+  const useShell = platform === 'win32' && (/\.(?:cmd|bat)$/i.test(command) || !path.isAbsolute(command));
+  const executable = useShell ? windowsCommandShell({ env }) : command;
+  const commandArgs = useShell
+    ? ['/d', '/s', '/c', [quoteWindowsCommandArg(command), ...args.map(quoteWindowsCommandArg)].join(' ')]
+    : args;
+  const result = spawnSync(executable, commandArgs, {
     cwd,
     env,
     encoding: 'utf8',
@@ -69,7 +79,8 @@ export async function inspectMcpClients({
   cliPaths = {},
   runner = runCommand,
   env = process.env,
-  cwd = PROJECT_ROOT
+  cwd = PROJECT_ROOT,
+  platform = process.platform
 } = {}) {
   const clients = [];
   for (const baseClient of CLIENTS) {
@@ -78,7 +89,8 @@ export async function inspectMcpClients({
       command: client.command,
       args: [client.id === 'codex' ? 'mcp' : 'mcp', 'get', name, ...(client.id === 'codex' ? ['--json'] : [])],
       env,
-      cwd
+      cwd,
+      platform
     });
     clients.push({
       id: client.id,
@@ -99,21 +111,22 @@ export async function installMcpClients({
   cliPaths = {},
   runner = runCommand,
   env = process.env,
-  cwd = PROJECT_ROOT
+  cwd = PROJECT_ROOT,
+  platform = process.platform
 } = {}) {
   const results = [];
   const mutations = [];
   for (const baseClient of CLIENTS) {
     const client = clientDefinition(baseClient, cliPaths);
     const getArgs = ['mcp', 'get', name, ...(client.id === 'codex' ? ['--json'] : [])];
-    const existing = await run(runner, { command: client.command, args: getArgs, env, cwd });
+    const existing = await run(runner, { command: client.command, args: getArgs, env, cwd, platform });
     if (isMissingCommand(existing)) {
       results.push({ id: client.id, command: client.command, ok: true, configured: false, skipped: true, reason: 'cli-not-found' });
       continue;
     }
 
     if (existing.code === 0) {
-      const removed = await run(runner, { command: client.command, args: ['mcp', 'remove', name], env, cwd });
+      const removed = await run(runner, { command: client.command, args: ['mcp', 'remove', name], env, cwd, platform });
       if (removed.code !== 0) {
         results.push({ id: client.id, command: client.command, ok: false, configured: false, error: 'remove-existing-failed' });
         continue;
@@ -124,7 +137,8 @@ export async function installMcpClients({
       command: client.command,
       args: client.add({ name, nodePath, mcpPath, tokenPath }),
       env,
-      cwd
+      cwd,
+      platform
     });
     mutations.push({
       client,
@@ -153,10 +167,10 @@ export async function installMcpClients({
       for (const mutation of [...mutations].reverse()) {
         if (!mutation.removedExisting && !mutation.added) continue;
         if (mutation.hadExisting) {
-          await run(runner, { command: mutation.client.command, args: ['mcp', 'remove', name], env, cwd }).catch(() => undefined);
-          await run(runner, { command: mutation.client.command, args: mutation.addArgs, env, cwd }).catch(() => undefined);
+          await run(runner, { command: mutation.client.command, args: ['mcp', 'remove', name], env, cwd, platform }).catch(() => undefined);
+          await run(runner, { command: mutation.client.command, args: mutation.addArgs, env, cwd, platform }).catch(() => undefined);
         } else if (mutation.added) {
-          await run(runner, { command: mutation.client.command, args: ['mcp', 'remove', name], env, cwd }).catch(() => undefined);
+          await run(runner, { command: mutation.client.command, args: ['mcp', 'remove', name], env, cwd, platform }).catch(() => undefined);
         }
       }
     },
@@ -169,7 +183,8 @@ export async function uninstallMcpClients({
   cliPaths = {},
   runner = runCommand,
   env = process.env,
-  cwd = PROJECT_ROOT
+  cwd = PROJECT_ROOT,
+  platform = process.platform
 } = {}) {
   const results = [];
   for (const baseClient of CLIENTS) {
@@ -178,13 +193,14 @@ export async function uninstallMcpClients({
       command: client.command,
       args: ['mcp', 'get', name, ...(client.id === 'codex' ? ['--json'] : [])],
       env,
-      cwd
+      cwd,
+      platform
     });
     if (isMissingCommand(existing) || existing.code !== 0) {
       results.push({ id: client.id, command: client.command, ok: true, removed: false, skipped: true });
       continue;
     }
-    const removed = await run(runner, { command: client.command, args: ['mcp', 'remove', name], env, cwd });
+    const removed = await run(runner, { command: client.command, args: ['mcp', 'remove', name], env, cwd, platform });
     results.push({ id: client.id, command: client.command, ok: removed.code === 0, removed: removed.code === 0, skipped: false });
   }
   return {

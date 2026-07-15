@@ -2,7 +2,7 @@
 
 ## 推荐安装方式
 
-新用户优先双击发布包中的 `setup.command`。如果系统没有允许双击脚本，打开终端后只执行：
+新用户在 macOS 优先双击发布包中的 `setup.command`，Windows 优先双击 `setup.cmd`。如果系统没有允许双击脚本，打开终端或 PowerShell 后只执行：
 
 ```bash
 cd agent-wps-reviewer
@@ -10,9 +10,9 @@ npm run setup
 npm run doctor
 ```
 
-该入口需要 macOS、WPS Office 和 Node.js 20 或更高版本（Node.js 自带 npm）。安装器不会自动下载或替换 Node.js；缺少运行时会先停止并给出明确提示。
+该入口需要 WPS Office 和 Node.js 20 或更高版本（Node.js 自带 npm）。安装器不会自动下载或替换 Node.js；缺少运行时会先停止并给出明确提示。
 
-`setup` 会安装唯一用户入口 `whitepaper-chief-editor` 及其内部 WPS 执行器 bundle、WPS 运行配置、生成本机 token、配置本产品 MCP 条目、写入用户级 bridge LaunchAgent 并启动本地 bridge，同时执行一次隔离的 MCP 初始化烟测。旧版本顶层 `whitepaper-wps-reviewer` 会在迁移时备份并移除。它不会执行 `launchctl`，不会启动、重启或聚焦 WPS；只会处理名为 `agent-wps-reviewer` 的 MCP 条目，不会改写其他 MCP。若 WPS 中没有显示 `Agent 审阅`，只在允许的测试窗口重启 WPS。
+`setup` 会安装唯一用户入口 `whitepaper-chief-editor` 及其内部 WPS 执行器 bundle、WPS 运行配置、生成本机 token、配置本产品 MCP 条目、写入用户级 bridge LaunchAgent（macOS）或 Task Scheduler 任务（Windows）并启动本地 bridge，同时执行一次隔离的 MCP 初始化烟测和 doctor。Windows 首次运行会先把运行文件事务性复制到 `%LOCALAPPDATA%\Programs\Agent WPS Reviewer\app`，升级时使用 `app.next`/`app.previous` 回滚；Task Scheduler 和 MCP 均引用稳定目录。旧版本顶层 `whitepaper-wps-reviewer` 会在迁移时备份并移除。它不会启动、重启或聚焦 WPS；只会处理名为 `agent-wps-reviewer` 的 MCP 条目，不会改写其他 MCP。Windows 首次安装需完成 WPS 官方 `publish/trust` 信任流程，不直接修改 `authaddin.json`。
 
 安装采用提交式事务：后续步骤失败时会回滚本产品已写入的 WPS 配置、授权、Skill、token、LaunchAgent 和本次启动的 bridge；MCP 只处理本产品同名条目，失败时撤销本次新增或恢复本产品配置，其他 MCP 条目不动。
 
@@ -35,7 +35,7 @@ npm run bridge:status
 npm run bridge:stop
 ```
 
-如果需要维护或单独修复 bridge 自启动配置，可以重新生成用户级 macOS LaunchAgent plist：
+如果需要维护或单独修复 bridge 自启动配置，macOS 可以重新生成用户级 LaunchAgent plist：
 
 ```bash
 npm run launch-agent:install
@@ -66,6 +66,10 @@ http://127.0.0.1:17531/WpsAgentReviewer/
 http://127.0.0.1:17531/addin/taskpane.html
 ```
 
+Windows 用户级自启动任务名为 `Agent WPS Reviewer Bridge`，权限级别为 `LIMITED`，不安装 Windows 服务、不要求管理员权限。可用 `npm run autostart:status` 或 `npm run doctor` 查看任务状态；`npm run autostart:install/uninstall` 只处理本产品精确任务名。
+
+维护者如已按官方要求安装并锁定 `wpsjs@2.2.3`，可在独立目录运行 `npm run wps:publish -- --output-dir <publish-dir>` 生成官方发布产物。该命令只生成 `publish.html`/`publish.xml` 并报告 `trustPending`；用户仍需在 WPS 中完成官方信任安装，不能把本地文件生成当成 `wpsTrusted` 证据。
+
 ## 安装方式
 
 维护人员如需单独写入 WPS 配置，可使用底层脚本。普通用户请使用 README 中的 `npm run setup`，不要分别安装 Skill 和 WPS 组件：
@@ -78,7 +82,7 @@ npm run wps:status
 
 `install:local` 会安装 WPS 用户级插件配置，并短暂启动默认端口做本地 URL 验收；验收结束后会清理它自己启动的 bridge。只想写配置时也可以用 `npm run wps:install`。
 
-`wps:install` 会把下面这段配置写入 WPS 用户级 JS 加载项目录，并在已有配置存在时先生成备份。Mac 版会同时写 `jsplugins.xml` 和 `publish.xml`，用于覆盖不同 WPS 版本的加载习惯：
+`wps:install` 会把下面这段配置写入 WPS 用户级 JS 加载项目录，并在已有配置存在时先生成备份。Mac 版会同时写 `jsplugins.xml` 和 `publish.xml`，用于覆盖不同 WPS 版本的加载习惯；Windows 生产安装只写本产品的 `publish.xml`，返回 `publishReady=true`、`wpsTrustPending=true`，直到用户完成官方信任安装前不会报告 `wpsTrusted=true`，也不直接改 `jsplugins.xml` 或 `authaddin.json`：
 
 ```xml
 <jsplugins>
@@ -121,7 +125,7 @@ npm run wps:diagnose
 - `bin/wps-addon-config.mjs`: 安装、卸载、查看 WPS 用户级插件配置。
 - `bin/wps-bridge-control.mjs`: 后台启动、停止、查看本地 bridge。
 - `bin/wps-diagnose.mjs`: 后台诊断 WPS 插件安装与 bridge 状态。
-- `scripts/install-launch-agent.mjs`: 生成、查看、删除可选 macOS LaunchAgent plist，不加载服务。
+- `scripts/install-launch-agent.mjs`: 生成、查看、删除 macOS LaunchAgent 或 Windows Task Scheduler 配置；不主动聚焦 WPS。
 
 ## 版本差异
 
@@ -134,7 +138,7 @@ WPS 客户端 JSAPI 在不同系统、不同版本中有差异。当前适配层
 
 ## 实机验收步骤
 
-在不影响正常工作时执行：
+在不影响正常工作时执行（Windows 需记录系统/WPS 架构和 build）：
 
 1. 后台准备：`npm run acceptance:prepare`
 2. 重启 WPS，打开 `output/acceptance-kit/wps-reviewer-acceptance.docx`

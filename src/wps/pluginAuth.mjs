@@ -1,16 +1,17 @@
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import {
   DEFAULT_PLUGIN_NAME,
   DEFAULT_PLUGIN_URL,
-  defaultMacJsaddonsDir
+  defaultJsaddonsDir
 } from './pluginConfig.mjs';
+import { replaceFileAtomic } from '../platform.mjs';
 
 function normalizePluginPath(value) {
   return String(value || '').trim().replace(/\/+$/, '');
 }
 
-function authFilePath(jsaddonsDir = defaultMacJsaddonsDir()) {
+function authFilePath(jsaddonsDir = defaultJsaddonsDir()) {
   return path.join(jsaddonsDir, 'authaddin.json');
 }
 
@@ -29,17 +30,9 @@ async function readAuthFile(filePath) {
   }
 }
 
-async function writeAtomic(filePath, data) {
-  await mkdir(path.dirname(filePath), { recursive: true });
-  const tmpPath = `${filePath}.tmp`;
-  await writeFile(tmpPath, `${JSON.stringify(data, null, 4)}\n`);
-  await rename(tmpPath, filePath);
-}
-
 async function restoreRaw(filePath, raw) {
   if (raw) {
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, raw);
+    await replaceFileAtomic(filePath, raw);
   } else {
     await rm(filePath, { force: true });
   }
@@ -66,7 +59,7 @@ function findPluginAuthEntries(data, { pluginName = DEFAULT_PLUGIN_NAME, pluginU
 }
 
 export async function readPluginAuthStatus({
-  jsaddonsDir = defaultMacJsaddonsDir(),
+  jsaddonsDir = defaultJsaddonsDir(),
   pluginName = DEFAULT_PLUGIN_NAME,
   pluginUrl = DEFAULT_PLUGIN_URL
 } = {}) {
@@ -98,12 +91,25 @@ export async function readPluginAuthStatus({
 }
 
 export async function authorizePluginAuthFile({
-  jsaddonsDir = defaultMacJsaddonsDir(),
+  jsaddonsDir = defaultJsaddonsDir(),
   pluginName = DEFAULT_PLUGIN_NAME,
-  pluginUrl = DEFAULT_PLUGIN_URL
+  pluginUrl = DEFAULT_PLUGIN_URL,
+  platform = process.platform
 } = {}) {
   const filePath = authFilePath(jsaddonsDir);
   const auth = await readAuthFile(filePath);
+  const currentStatus = await readPluginAuthStatus({ jsaddonsDir, pluginName, pluginUrl });
+  if (platform === 'win32') {
+    return {
+      ...currentStatus,
+      changed: false,
+      wpsTrusted: currentStatus.authorized === true,
+      trustPending: currentStatus.authorized !== true,
+      reason: 'Windows production install is read-only; complete WPS official trust installation before retrying.',
+      rollback: async () => {},
+      cleanup: async () => {}
+    };
+  }
   if (auth.parseError) {
     const error = new Error('WPS authaddin.json 不是有效 JSON，无法安全修复。');
     error.code = 'WPS_AUTH_INVALID';
@@ -132,7 +138,7 @@ export async function authorizePluginAuthFile({
   }
 
   if (changed) {
-    await writeAtomic(filePath, auth.data);
+    await replaceFileAtomic(filePath, `${JSON.stringify(auth.data, null, 4)}\n`);
   }
 
   const status = await readPluginAuthStatus({ jsaddonsDir, pluginName, pluginUrl });
@@ -140,6 +146,8 @@ export async function authorizePluginAuthFile({
     filePath,
     exists: true,
     changed,
+    wpsTrusted: status.authorized === true,
+    trustPending: false,
     authorized: status.authorized,
     matchedCount: status.matchedCount,
     matched: status.matched,

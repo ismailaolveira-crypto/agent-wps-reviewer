@@ -1,4 +1,4 @@
-import { installPluginConfig, DEFAULT_PLUGIN_URL, defaultMacJsaddonsDir } from '../wps/pluginConfig.mjs';
+import { installPluginConfig, DEFAULT_PLUGIN_URL, defaultJsaddonsDir } from '../wps/pluginConfig.mjs';
 import { authorizePluginAuthFile } from '../wps/pluginAuth.mjs';
 import { startBridge, statusBridge, stopBridge } from '../bridge/processControl.mjs';
 import { smokeWpsResourcesAtBaseUrl } from '../acceptance/resourceSmoke.mjs';
@@ -9,6 +9,8 @@ import { checkMcpServer } from './mcpHealth.mjs';
 import { ensureAgentToken } from './agentToken.mjs';
 import { installMcpClients } from './mcpConfig.mjs';
 import { installLaunchAgent } from './launchAgent.mjs';
+import { defaultProductDataDir, defaultProductFilesDir, defaultProductRuntimeDir } from '../platform.mjs';
+import path from 'node:path';
 
 function withoutTransactionHooks(value) {
   if (!value || typeof value !== 'object') return value;
@@ -21,8 +23,10 @@ function pluginUrlFor({ host, port }) {
 }
 
 export async function installLocalProduct({
+  platform = process.platform,
   host = '127.0.0.1',
   port = 17531,
+  configMode = platform === 'win32' ? 'publish' : 'legacy',
   pluginUrl = port === 17531 && host === '127.0.0.1' ? DEFAULT_PLUGIN_URL : pluginUrlFor({ host, port }),
   jsaddonsDir = undefined,
   backup = true,
@@ -34,10 +38,11 @@ export async function installLocalProduct({
   mcpOptions = {},
   skillTargetRoots = undefined,
   bridgeOptions = {},
+  configureAutostart = undefined,
   configureLaunchAgent = false,
   launchAgentOptions = {}
 } = {}) {
-  const resolvedJsaddonsDir = jsaddonsDir || defaultMacJsaddonsDir();
+  const resolvedJsaddonsDir = jsaddonsDir || defaultJsaddonsDir({ platform });
   let config;
   let authorization;
   let skillTransaction;
@@ -48,18 +53,22 @@ export async function installLocalProduct({
   let readiness = null;
   let bridgeStartedByInstall = false;
   const rollbackActions = [];
+  const shouldConfigureAutostart = configureAutostart ?? configureLaunchAgent;
 
   try {
     config = await installPluginConfig({
       jsaddonsDir: resolvedJsaddonsDir,
       pluginUrl,
-      backup
+      backup,
+      platform,
+      mode: configMode
     });
     rollbackActions.push(config.rollback);
 
     authorization = await authorizePluginAuthFile({
       jsaddonsDir: resolvedJsaddonsDir,
-      pluginUrl
+      pluginUrl,
+      platform
     });
     rollbackActions.push(authorization.rollback);
 
@@ -78,11 +87,15 @@ export async function installLocalProduct({
       };
     rollbackActions.push(skillTransaction.rollback);
 
-    agentToken = await ensureAgentToken({ tokenPath: bridgeOptions.agentTokenPath || undefined });
+    agentToken = await ensureAgentToken({
+      tokenPath: bridgeOptions.agentTokenPath || path.join(defaultProductDataDir({ platform }), 'agent-token'),
+      platform
+    });
     rollbackActions.push(agentToken.rollback);
     const securedBridgeOptions = {
       ...bridgeOptions,
-      agentTokenPath: agentToken.tokenPath
+      agentTokenPath: agentToken.tokenPath,
+      platform
     };
 
     bridge = await statusBridge({ ...securedBridgeOptions, host, port });
@@ -94,7 +107,7 @@ export async function installLocalProduct({
       const resources = await smokeWpsResourcesAtBaseUrl(baseUrl);
       const mcp = await checkMcpServer({ serverUrl: baseUrl, tokenPath: agentToken.tokenPath });
       const urlConsistency = checkInstalledUrls
-        ? await checkUrlConsistency({ jsaddonsDir: resolvedJsaddonsDir, pluginUrl })
+        ? await checkUrlConsistency({ jsaddonsDir: resolvedJsaddonsDir, pluginUrl, platform })
         : { ok: true, skipped: true };
       readiness = {
         ok: bridge.running === true && resources.ok === true && mcp.ok === true && urlConsistency.ok === true,
@@ -130,7 +143,8 @@ export async function installLocalProduct({
         cliPaths: mcpOptions.cliPaths,
         env: mcpOptions.env,
         cwd: mcpOptions.cwd,
-        runner: mcpOptions.runner
+        runner: mcpOptions.runner,
+        platform
       })
       : { ok: true, skipped: true, reason: 'not-requested', clients: [], rollback: async () => {} };
     if (!mcpConfig.ok) {
@@ -142,13 +156,20 @@ export async function installLocalProduct({
 
     if (readiness) readiness = { ...readiness, mcpConfig, ok: readiness.ok === true && mcpConfig.ok === true };
 
-    if (configureLaunchAgent) {
+    if (shouldConfigureAutostart) {
+      const launchDataDir = launchAgentOptions.dataDir || bridgeOptions.dataDir || (platform === 'win32'
+        ? defaultProductFilesDir({ platform })
+        : path.join(process.cwd(), 'data'));
+      const launchPidFile = launchAgentOptions.pidFile || bridgeOptions.pidFile || (platform === 'win32'
+        ? path.join(defaultProductRuntimeDir({ platform }), 'bridge.pid')
+        : path.join(launchDataDir, 'runtime/bridge.pid'));
       launchAgent = await installLaunchAgent({
         ...launchAgentOptions,
+        platform,
         host,
         port,
-        dataDir: launchAgentOptions.dataDir || bridgeOptions.dataDir,
-        pidFile: launchAgentOptions.pidFile || bridgeOptions.pidFile,
+        dataDir: launchDataDir,
+        pidFile: launchPidFile,
         agentToken: '',
         agentTokenPath: agentToken.tokenPath
       });
@@ -161,9 +182,17 @@ export async function installLocalProduct({
     }
     await skillTransaction.cleanup();
 
+    const wpsTrustPending = platform === 'win32' && authorization.trustPending === true;
+    const baseOk = config.installed === true && authorization.authorized !== false && skillTransaction.ok === true && (!readiness || readiness.ok === true);
+
     return {
-      ok: config.installed === true && authorization.authorized !== false && skillTransaction.ok === true && (!readiness || readiness.ok === true),
+      ok: baseOk,
+      ready: baseOk && !wpsTrustPending,
+      productionReady: false,
+      wpsTrustPending,
+      wpsTrusted: authorization.wpsTrusted === true,
       installed: true,
+      platform,
       pluginUrl,
       config: withoutTransactionHooks(config),
       authorization: withoutTransactionHooks(authorization),
@@ -176,6 +205,7 @@ export async function installLocalProduct({
       },
       mcpConfig: withoutTransactionHooks(mcpConfig),
       launchAgent: launchAgent ? withoutTransactionHooks(launchAgent) : { ok: true, skipped: true },
+      autostart: launchAgent ? withoutTransactionHooks(launchAgent) : { ok: true, skipped: true },
       bridge,
       readiness,
       nextManualSteps: [
@@ -186,7 +216,7 @@ export async function installLocalProduct({
     };
   } catch (error) {
     if (bridgeStartedByInstall) {
-      await stopBridge({ ...bridgeOptions, host, port }).catch(() => undefined);
+      await stopBridge({ ...bridgeOptions, host, port, platform }).catch(() => undefined);
     }
     if (mcpConfig?.rollback) await mcpConfig.rollback().catch(() => undefined);
     for (const rollback of [...rollbackActions].reverse()) {

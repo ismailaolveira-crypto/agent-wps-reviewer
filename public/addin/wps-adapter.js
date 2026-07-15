@@ -723,6 +723,7 @@
   function createWpsAdapter() {
     const app = window.wps.WpsApplication();
     const wpsVersion = String(app.Version || app.Build || app.version || 'WPS runtime detected');
+    const wpsArch = String(app.Architecture || app.architecture || app.Arch || '');
 
     function currentDocument() {
       return app.ActiveDocument;
@@ -737,7 +738,8 @@
           docTitle: documentTitle(doc),
           docFingerprint: `${documentFullName(doc) || documentTitle(doc)}:${text.length}`,
           textLength: text.length,
-          wpsVersion
+          wpsVersion,
+          wpsArch
         };
       },
       async prepareTarget(suggestion) {

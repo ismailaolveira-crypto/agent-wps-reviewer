@@ -65,3 +65,56 @@ jobs:
           }
           console.log(JSON.stringify({ fileCount: manifest.files.length, ok: true }));
           NODE
+
+  verify-windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Windows platform tests
+        run: node --test test/windows-platform.test.mjs test/mcp-config.test.mjs test/wps-diagnostics.test.mjs
+
+      - name: Validate Windows entry points
+        shell: pwsh
+        run: |
+          if (-not (Test-Path .\setup.cmd)) { throw 'setup.cmd missing' }
+          node --check .\src\platform.mjs
+          node --check .\src\install\stableWindowsBundle.mjs
+          node --check .\scripts\setup.mjs
+          node --check .\src\install\launchAgent.mjs
+          node --check .\src\bridge\processControl.mjs
+          npm run validate:agent-contract
+
+  verify-macos:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run macOS runtime regression
+        run: node --test test/launch-agent.test.mjs test/process-control.test.mjs test/local-install.test.mjs test/mcp-config.test.mjs

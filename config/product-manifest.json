@@ -1,6 +1,19 @@
 {
   "schemaVersion": 1,
   "product": "agent-wps-reviewer",
+  "platforms": {
+    "darwin": {
+      "status": "background-ready",
+      "foregroundAcceptance": "required"
+    },
+    "win32": {
+      "status": "beta",
+      "supportedOs": ["Windows 10 22H2", "Windows 11 23H2", "Windows 11 24H2"],
+      "architectures": ["x64"],
+      "foregroundAcceptance": "required",
+      "trustInstall": "wpsjs-publish-trust"
+    }
+  },
   "release": {
     "channel": "beta",
     "productionReady": false,

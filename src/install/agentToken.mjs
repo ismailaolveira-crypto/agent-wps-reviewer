@@ -3,6 +3,7 @@ import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'n
 import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { defaultProductDataDir } from '../platform.mjs';
 
 const TOKEN_ENV = 'WPS_REVIEWER_TOKEN_FILE';
 const TOKEN_BYTES = 32;
@@ -12,6 +13,16 @@ export function defaultAgentTokenPath({
   platform = process.platform
 } = {}) {
   if (!homeDir) throw new Error('HOME is not set; pass tokenPath explicitly.');
+  if (platform === 'win32') {
+    return path.join(defaultProductDataDir({
+      platform,
+      env: {
+        ...process.env,
+        USERPROFILE: homeDir,
+        LOCALAPPDATA: path.join(homeDir, 'AppData/Local')
+      }
+    }), 'agent-token');
+  }
   return platform === 'darwin'
     ? path.join(homeDir, 'Library/Application Support/Agent WPS Reviewer/agent-token')
     : path.join(homeDir, '.config/agent-wps-reviewer/agent-token');
@@ -26,13 +37,13 @@ function normalizeToken(value) {
   return token.length >= 32 ? token : '';
 }
 
-function secureParentMode(parentPath) {
+function secureParentMode(parentPath, platform = process.platform) {
   mkdirSync(parentPath, { recursive: true, mode: 0o700 });
-  chmodSync(parentPath, 0o700);
+  if (platform !== 'win32') chmodSync(parentPath, 0o700);
 }
 
-function secureFileMode(filePath) {
-  chmodSync(filePath, 0o600);
+function secureFileMode(filePath, platform = process.platform) {
+  if (platform !== 'win32') chmodSync(filePath, 0o600);
 }
 
 export function readAgentTokenSync({ tokenPath = resolveAgentTokenPath() } = {}) {
@@ -51,21 +62,21 @@ export async function readAgentToken({ tokenPath = resolveAgentTokenPath() } = {
   }
 }
 
-export async function ensureAgentToken({ tokenPath = resolveAgentTokenPath() } = {}) {
+export async function ensureAgentToken({ tokenPath = resolveAgentTokenPath(), platform = process.platform } = {}) {
   const resolvedPath = path.resolve(tokenPath);
   const parentPath = path.dirname(resolvedPath);
   await mkdir(parentPath, { recursive: true, mode: 0o700 });
-  await chmod(parentPath, 0o700);
+  if (platform !== 'win32') await chmod(parentPath, 0o700);
 
   const existing = await readAgentToken({ tokenPath: resolvedPath });
   if (existing) {
-    await chmod(resolvedPath, 0o600);
+    if (platform !== 'win32') await chmod(resolvedPath, 0o600);
     return {
       tokenPath: resolvedPath,
       token: existing,
       created: false,
-      fileMode: '600',
-      directoryMode: '700',
+      fileMode: platform === 'win32' ? 'acl-user-only' : '600',
+      directoryMode: platform === 'win32' ? 'acl-user-only' : '700',
       rollback: async () => {},
       cleanup: async () => {}
     };
@@ -74,15 +85,15 @@ export async function ensureAgentToken({ tokenPath = resolveAgentTokenPath() } =
   const token = randomBytes(TOKEN_BYTES).toString('hex');
   const temporaryPath = `${resolvedPath}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
   await writeFile(temporaryPath, `${token}\n`, { encoding: 'utf8', mode: 0o600 });
-  await chmod(temporaryPath, 0o600);
+  if (platform !== 'win32') await chmod(temporaryPath, 0o600);
   await rename(temporaryPath, resolvedPath);
-  await chmod(resolvedPath, 0o600);
+  if (platform !== 'win32') await chmod(resolvedPath, 0o600);
   return {
     tokenPath: resolvedPath,
     token,
     created: true,
-    fileMode: '600',
-    directoryMode: '700',
+    fileMode: platform === 'win32' ? 'acl-user-only' : '600',
+    directoryMode: platform === 'win32' ? 'acl-user-only' : '700',
     rollback: async () => {
       if ((await readAgentToken({ tokenPath: resolvedPath })) === token) {
         await rm(resolvedPath, { force: true });
@@ -92,23 +103,23 @@ export async function ensureAgentToken({ tokenPath = resolveAgentTokenPath() } =
   };
 }
 
-export function ensureAgentTokenSync({ tokenPath = resolveAgentTokenPath() } = {}) {
+export function ensureAgentTokenSync({ tokenPath = resolveAgentTokenPath(), platform = process.platform } = {}) {
   const resolvedPath = path.resolve(tokenPath);
   const parentPath = path.dirname(resolvedPath);
-  secureParentMode(parentPath);
+  secureParentMode(parentPath, platform);
   const existing = readAgentTokenSync({ tokenPath: resolvedPath });
   if (existing) {
-    secureFileMode(resolvedPath);
-    return { tokenPath: resolvedPath, token: existing, created: false, fileMode: '600', directoryMode: '700' };
+    secureFileMode(resolvedPath, platform);
+    return { tokenPath: resolvedPath, token: existing, created: false, fileMode: platform === 'win32' ? 'acl-user-only' : '600', directoryMode: platform === 'win32' ? 'acl-user-only' : '700' };
   }
 
   const token = randomBytes(TOKEN_BYTES).toString('hex');
   const temporaryPath = `${resolvedPath}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
   writeFileSync(temporaryPath, `${token}\n`, { encoding: 'utf8', mode: 0o600 });
-  secureFileMode(temporaryPath);
+  secureFileMode(temporaryPath, platform);
   renameSync(temporaryPath, resolvedPath);
-  secureFileMode(resolvedPath);
-  return { tokenPath: resolvedPath, token, created: true, fileMode: '600', directoryMode: '700' };
+  secureFileMode(resolvedPath, platform);
+  return { tokenPath: resolvedPath, token, created: true, fileMode: platform === 'win32' ? 'acl-user-only' : '600', directoryMode: platform === 'win32' ? 'acl-user-only' : '700' };
 }
 
 export function tokenEnvName() {

@@ -36,6 +36,8 @@ npm run release
 - MCP stdio 初始化自检，确认 Agent 入口可运行
 - Codex/Claude Code MCP 同名条目安装、状态和卸载脚本；不会把 token 写入发布包
 - `setup.command` 新手安装入口和 `validate:release-install` 干净发布包验收脚本
+- `setup.cmd` Windows 新手安装入口；Windows 使用用户级 Task Scheduler，不安装服务、不要求管理员权限
+- Windows 稳定安装目录事务（`app.next`/`app.previous`）、autostart 验证脚本和 `wpsjs@2.2.3` publish 调用适配；本地生成 publish 产物仍不等于 WPS 已完成信任
 - 仅维护人员使用的 Skill 卸载/恢复脚本；默认只移除本产品入口，恢复旧版本备份必须显式传入 `--restore-backup`
 - `setup` 默认写入本产品用户级 LaunchAgent；bridge 进程会写入并清理 PID 文件，doctor 可以识别登录后自启动的服务归属
 - 后台启停脚本

@@ -43,7 +43,7 @@ test('release ZIP is reproducible across consecutive builds', async () => {
   const manifest = JSON.parse(await readFile(second.manifestPath, 'utf8'));
   assert.equal(manifest.sha256, second.sha256);
   assert.equal(first.fileCount, second.fileCount);
-  assert.equal(second.fileCount, 111);
+  assert.equal(second.fileCount, 122);
 
   const sourcePath = path.resolve('AGENTS.md');
   const sourceStat = await stat(sourcePath);

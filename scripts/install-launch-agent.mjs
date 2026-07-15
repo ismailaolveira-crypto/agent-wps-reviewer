@@ -6,7 +6,9 @@ import {
   defaultLaunchAgentsDir,
   installLaunchAgent,
   readLaunchAgentStatus,
-  uninstallLaunchAgent
+  uninstallLaunchAgent,
+  buildWindowsTaskArgs,
+  DEFAULT_WINDOWS_TASK_NAME
 } from '../src/install/launchAgent.mjs';
 
 function parseArgs(argv) {
@@ -28,9 +30,10 @@ function parseArgs(argv) {
 }
 
 function resolveOptions(flags) {
-  const launchAgentsDir = flags.dir || defaultLaunchAgentsDir();
+  const platform = process.platform;
+  const launchAgentsDir = platform === 'win32' ? flags.dir : (flags.dir || defaultLaunchAgentsDir());
   const label = flags.label;
-  const plistPath = flags.plist || defaultLaunchAgentPath({ launchAgentsDir, label });
+  const plistPath = platform === 'win32' ? flags.plist : (flags.plist || defaultLaunchAgentPath({ launchAgentsDir, label }));
   const projectRoot = flags['project-root'] ? path.resolve(flags['project-root']) : undefined;
   return {
     launchAgentsDir,
@@ -44,7 +47,9 @@ function resolveOptions(flags) {
     stdoutPath: flags.stdout,
     stderrPath: flags.stderr,
     agentToken: flags.token || process.env.WPS_REVIEWER_TOKEN || '',
-    agentTokenPath: flags['token-file'] || process.env.WPS_REVIEWER_TOKEN_FILE || ''
+    agentTokenPath: flags['token-file'] || process.env.WPS_REVIEWER_TOKEN_FILE || '',
+    platform,
+    taskName: flags['task-name'] || DEFAULT_WINDOWS_TASK_NAME
   };
 }
 
@@ -56,16 +61,18 @@ if (command === 'install') {
   console.log(JSON.stringify(result, null, 2));
   if (!result.ok) process.exitCode = 1;
 } else if (command === 'status') {
-  const result = await readLaunchAgentStatus({ plistPath: options.plistPath });
+  const result = await readLaunchAgentStatus({ platform: options.platform, plistPath: options.plistPath, taskName: options.taskName });
   console.log(JSON.stringify(result, null, 2));
 } else if (command === 'uninstall') {
-  const result = await uninstallLaunchAgent({ plistPath: options.plistPath });
+  const result = await uninstallLaunchAgent({ platform: options.platform, plistPath: options.plistPath, taskName: options.taskName });
   console.log(JSON.stringify(result, null, 2));
   if (!result.ok) process.exitCode = 1;
 } else if (command === 'print') {
-  console.log(buildLaunchAgentPlist(options));
+  console.log(options.platform === 'win32'
+    ? JSON.stringify(buildWindowsTaskArgs(options), null, 2)
+    : buildLaunchAgentPlist(options));
 } else {
   console.error(`Unknown command: ${command}`);
-  console.error('Usage: node scripts/install-launch-agent.mjs [status|install|uninstall|print] [--dir DIR] [--plist FILE]');
+  console.error('Usage: node scripts/install-launch-agent.mjs [status|install|uninstall|print] [--dir DIR] [--plist FILE] [--task-name NAME]');
   process.exitCode = 2;
 }

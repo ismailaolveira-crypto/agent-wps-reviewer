@@ -25,7 +25,8 @@ export async function validateDefaultPortReadiness({
   logFile = '',
   jsaddonsDir = undefined,
   pluginUrl = undefined,
-  checkInstalledUrls = true
+  checkInstalledUrls = true,
+  platform = process.platform
 } = {}) {
   const ownedRuntimeDir = runtimeDir || (await mkdtemp(path.join(os.tmpdir(), 'wps-default-port-')));
   const options = {
@@ -34,7 +35,8 @@ export async function validateDefaultPortReadiness({
     runtimeDir: ownedRuntimeDir,
     dataDir: dataDir || path.join(ownedRuntimeDir, 'data'),
     pidFile: pidFile || path.join(ownedRuntimeDir, 'bridge.pid'),
-    logFile: logFile || path.join(ownedRuntimeDir, 'bridge.log')
+    logFile: logFile || path.join(ownedRuntimeDir, 'bridge.log'),
+    platform
   };
 
   let startedByCheck = false;
@@ -62,7 +64,7 @@ export async function validateDefaultPortReadiness({
 
     resources = await smokeWpsResourcesAtBaseUrl(baseUrl);
     urls = checkInstalledUrls
-      ? await checkUrlConsistency({ jsaddonsDir, pluginUrl })
+      ? await checkUrlConsistency({ jsaddonsDir, pluginUrl, platform })
       : { ok: true, skipped: true };
 
     return {

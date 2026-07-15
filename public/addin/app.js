@@ -824,6 +824,7 @@
           docTitle: meta.docTitle,
           docFingerprint: meta.docFingerprint,
           wpsVersion: meta.wpsVersion || '',
+          wpsArch: meta.wpsArch || '',
           suggestionId: suggestion?.id || '',
           resultMessage: result?.message || '',
           location: result && Number.isFinite(result.start) ? { start: result.start, end: result.end } : null,

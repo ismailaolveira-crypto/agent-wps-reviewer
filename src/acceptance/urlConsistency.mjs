@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   DEFAULT_PLUGIN_NAME,
   DEFAULT_PLUGIN_URL,
-  defaultMacJsaddonsDir
+  defaultJsaddonsDir
 } from '../wps/pluginConfig.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -93,15 +93,16 @@ function checkPortableConnector(filePath, source, expectedBridgeOrigin) {
 }
 
 export async function checkUrlConsistency({
-  jsaddonsDir = defaultMacJsaddonsDir(),
+  jsaddonsDir = undefined,
   pluginUrl = DEFAULT_PLUGIN_URL,
-  projectRoot = PROJECT_ROOT
+  projectRoot = PROJECT_ROOT,
+  platform = process.platform
 } = {}) {
   const expectedTaskpaneUrl = taskpaneUrlFromPluginUrl(pluginUrl);
   const paths = {
     publicConfig: path.join(projectRoot, 'public/jsplugins.xml'),
-    installedConfig: path.join(jsaddonsDir, 'jsplugins.xml'),
-    installedPublish: path.join(jsaddonsDir, 'publish.xml'),
+    installedConfig: path.join(jsaddonsDir || defaultJsaddonsDir({ platform }), 'jsplugins.xml'),
+    installedPublish: path.join(jsaddonsDir || defaultJsaddonsDir({ platform }), 'publish.xml'),
     mainJs: path.join(projectRoot, 'public/WpsAgentReviewer/main.js'),
     documentConnector: path.join(projectRoot, 'public/WpsAgentReviewer/document-connector.js')
   };
@@ -115,7 +116,9 @@ export async function checkUrlConsistency({
     // public/jsplugins.xml is the default-port bootstrap template; the installed
     // user config is the source of truth for a custom port.
     checkPluginFile('public-jsplugins', paths.publicConfig, publicConfig, DEFAULT_PLUGIN_URL),
-    checkPluginFile('installed-jsplugins', paths.installedConfig, installedConfig, pluginUrl),
+    ...(platform === 'win32'
+      ? [{ label: 'installed-jsplugins', path: paths.installedConfig, status: 'skipped', reason: 'Windows production uses WPS official publish/trust flow; jsplugins.xml is not required.' }]
+      : [checkPluginFile('installed-jsplugins', paths.installedConfig, installedConfig, pluginUrl)]),
     checkPluginFile('installed-publish', paths.installedPublish, installedPublish, pluginUrl)
   ];
 
@@ -126,7 +129,8 @@ export async function checkUrlConsistency({
     new URL(pluginUrl).origin
   ));
 
-  const failed = checks.filter((item) => item.status !== 'passed');
+  const failed = checks.filter((item) => item.status === 'failed');
+  const passed = checks.filter((item) => item.status === 'passed');
 
   return {
     ok: failed.length === 0,
@@ -135,7 +139,7 @@ export async function checkUrlConsistency({
       taskpaneUrl: expectedTaskpaneUrl
     },
     checked: checks.length,
-    passed: checks.length - failed.length,
+    passed: passed.length,
     failed: failed.length,
     checks
   };

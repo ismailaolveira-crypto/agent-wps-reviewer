@@ -12,6 +12,8 @@ import { ReviewStore } from './store.mjs';
 import { publicError } from './validation.mjs';
 import { readAgentTokenSync } from '../install/agentToken.mjs';
 import { CURRENT_RUNTIME_IDENTITY } from '../acceptance/runtimeIdentity.mjs';
+import { randomUUID } from 'node:crypto';
+import os from 'node:os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '../..');
@@ -796,18 +798,43 @@ if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1] ?? '')) {
   const host = process.env.HOST ?? '127.0.0.1';
   const dataDir = process.env.DATA_DIR || path.join(PROJECT_ROOT, 'data');
   const pidFile = process.env.WPS_REVIEWER_PID_FILE || '';
+  const runtimeInstanceId = process.env.WPS_REVIEWER_RUNTIME_INSTANCE_ID || randomUUID();
   const agentToken = process.env.WPS_REVIEWER_AGENT_TOKEN || readAgentTokenSync({
     tokenPath: process.env.WPS_REVIEWER_AGENT_TOKEN_FILE || undefined
   }) || '';
   const allowLegacySubmission = process.env.WPS_REVIEWER_ALLOW_LEGACY_SUBMIT === '1';
-  const { server } = await createBridgeServer({ dataDir, agentToken, allowLegacySubmission, servicePort: port });
+  const runtimeIdentity = {
+    ...CURRENT_RUNTIME_IDENTITY,
+    runtimeInstanceId,
+    platform: process.platform,
+    osVersion: os.release(),
+    osArch: process.arch
+  };
+  const { server } = await createBridgeServer({
+    dataDir,
+    agentToken,
+    allowLegacySubmission,
+    servicePort: port,
+    runtimeIdentity
+  });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(port, host, resolve);
   });
   if (pidFile) {
     await mkdir(path.dirname(pidFile), { recursive: true });
-    await writeFile(pidFile, `${JSON.stringify({ pid: process.pid, host, port })}\n`);
+    await writeFile(pidFile, `${JSON.stringify({
+      pid: process.pid,
+      host,
+      port,
+      runtimeInstanceId,
+      platform: process.platform,
+      osVersion: os.release(),
+      osArch: process.arch,
+      productVersion: CURRENT_RUNTIME_IDENTITY.productVersion,
+      buildFingerprint: CURRENT_RUNTIME_IDENTITY.buildFingerprint,
+      dataDir
+    })}\n`);
   }
   let shuttingDown = false;
   const shutdown = async () => {

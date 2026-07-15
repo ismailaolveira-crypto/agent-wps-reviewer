@@ -26,7 +26,13 @@ cd agent-wps-reviewer
 bash setup.command
 ```
 
-也可以从 GitHub Releases 下载 `agent-wps-reviewer-0.2.0.zip`，解压后运行根目录的 `setup.command`。发布 ZIP 同时包含 WPS 插件、bridge、MCP server、用户入口 Skill 和内部执行 Skill，不需要从其他仓库补文件。
+Windows 使用 PowerShell 或 CMD 进入目录后运行：
+
+```bat
+setup.cmd
+```
+
+也可以从 GitHub Releases 下载 `agent-wps-reviewer-0.2.0.zip`，解压后按系统运行根目录的 `setup.command`（macOS）或 `setup.cmd`（Windows）。发布 ZIP 同时包含 WPS 插件、bridge、MCP server、用户入口 Skill 和内部执行 Skill，不需要从其他仓库补文件。
 
 安装完成后新开一个 Agent 会话，直接说“使用 `whitepaper-chief-editor` 审查当前 WPS 文章”。安装器会把用户入口 Skill 和 `agent-wps-reviewer` MCP 条目写入已检测到的 Codex/Claude Code 配置；`npm run doctor` 用于确认两者均可用。
 
@@ -34,9 +40,9 @@ bash setup.command
 
 ## 新手安装
 
-从 release ZIP 解压后，优先双击根目录的 `setup.command`。它会一次完成 Skill、WPS 运行配置、bridge、用户级 bridge 登录后自启动配置和 MCP 配置/自检；如果本机安装了 Codex 或 Claude Code，会只写入名为 `agent-wps-reviewer` 的本产品 MCP 条目，不覆盖其他 MCP。不会执行 `launchctl`，也不会启动、重启或聚焦 WPS。
+从 release ZIP 解压后，macOS 优先双击根目录的 `setup.command`，Windows 优先双击 `setup.cmd`。两者都会一次完成 Skill、WPS 运行配置、bridge、用户级 bridge 登录后自启动配置和 MCP 配置/自检；如果本机安装了 Codex 或 Claude Code，会只写入名为 `agent-wps-reviewer` 的本产品 MCP 条目，不覆盖其他 MCP。不会启动、重启或聚焦 WPS。
 
-安装入口需要 macOS、已安装的 WPS Office，以及 Node.js 20 或更高版本（Node.js 自带 npm）。如果双击后提示缺少 Node.js，请先安装官方 Node.js 20+，再重新双击 `setup.command`；安装器不会偷偷下载或替换系统运行时。
+安装入口需要已安装的 WPS Office，以及 Node.js 20 或更高版本（Node.js 自带 npm）。如果双击后提示缺少 Node.js，请先安装官方 Node.js 20+，再重新运行对应入口；安装器不会偷偷下载或替换系统运行时。
 
 如果 macOS 不允许双击脚本，打开终端进入解压目录后只执行：
 
@@ -45,7 +51,18 @@ npm run setup
 npm run doctor
 ```
 
-安装完成后再打开 WPS。若没有显示 `Agent 审阅`，只在允许的测试窗口重启 WPS。普通用户不需要分别安装 Skill、插件、bridge 或 LaunchAgent。
+Windows 的等价命令为：
+
+```bat
+npm run setup
+npm run doctor
+```
+
+Windows 首次安装使用 WPS 官方 `publish/trust` 流程；安装器不会直接写入 `authaddin.json`，也不会修改 WPS 安装目录。Windows Beta 目前只承诺 Windows 10/11 x64，具体 WPS 版本、架构和 build 必须记录在真实验收证据中。
+
+Windows 安装输出会分别报告 `ready`、`publishReady`、`wpsTrustPending` 和 `wpsTrusted`；写入 `publish.xml` 只代表本地资源已准备，不代表 WPS 官方信任已经完成。完成信任后再运行 `npm run doctor`。
+
+安装完成后再打开 WPS。若没有显示 `Agent 审阅`，只在允许的测试窗口重启 WPS；Windows 还应重新检查官方信任安装状态。普通用户不需要分别安装 Skill、插件、bridge 或 LaunchAgent/Task Scheduler。
 
 安装失败不会留下半套产品配置：安装器会回滚本产品的 WPS 配置、Skill、token、bridge、LaunchAgent 和同名 MCP 条目，不会改动其他插件或其他 MCP 条目。
 

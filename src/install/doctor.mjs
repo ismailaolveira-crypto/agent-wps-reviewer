@@ -12,6 +12,9 @@ import { inspectMcpClients } from './mcpConfig.mjs';
 import { buildAgentAuthHeaders } from '../bridge/auth.mjs';
 import { runWpsDiagnostics } from '../wps/diagnostics.mjs';
 import { DEFAULT_LAUNCH_AGENT_LABEL, defaultLaunchAgentPath, readLaunchAgentStatus } from './launchAgent.mjs';
+import { DEFAULT_WINDOWS_TASK_NAME } from './launchAgent.mjs';
+import { defaultJsaddonsDir } from '../wps/pluginConfig.mjs';
+import { platformSummary } from '../platform.mjs';
 
 const RELEASE_LOCK_STALE_MS = 10 * 60 * 1000;
 
@@ -245,7 +248,10 @@ export async function runDoctor({
   wpsAppPath,
   checkWpsProcess = true,
   checkLaunchAgent = false,
-  launchAgentPath
+  launchAgentPath,
+  platform = process.platform,
+  env = process.env,
+  launchTaskName = DEFAULT_WINDOWS_TASK_NAME
 } = {}) {
   const resolvedManifestPath = manifestPath || path.join(PROJECT_ROOT, 'config/product-manifest.json');
   const resolvedProjectRoot = projectRoot || (manifestPath ? inferProjectRoot(resolvedManifestPath) : PROJECT_ROOT);
@@ -330,24 +336,31 @@ export async function runDoctor({
     }
   }
 
-  const pluginConfig = await readPluginConfigStatus({ jsaddonsDir });
-  const pluginAuth = await readPluginAuthStatus({ jsaddonsDir });
-  const bridge = await statusBridge(bridgeOptions);
-  const tokenPath = bridgeOptions.agentTokenPath || defaultAgentTokenPath();
+  const resolvedJsaddonsDir = jsaddonsDir || defaultJsaddonsDir({ platform, env });
+  const resolvedBridgeOptions = { ...bridgeOptions, platform };
+  const pluginConfig = await readPluginConfigStatus({ jsaddonsDir: resolvedJsaddonsDir, platform });
+  const pluginAuth = await readPluginAuthStatus({ jsaddonsDir: resolvedJsaddonsDir });
+  const bridge = await statusBridge(resolvedBridgeOptions);
+  const tokenPath = bridgeOptions.agentTokenPath || defaultAgentTokenPath({
+    platform,
+    homeDir: platform === 'win32' ? env.USERPROFILE : env.HOME
+  });
   const token = await readAgentToken({ tokenPath });
-  const mcpConfig = await inspectMcpClients();
+  const mcpConfig = await inspectMcpClients({ platform });
   const availableMcpClients = mcpConfig.clients.filter((client) => client.available);
   const configuredMcpClients = availableMcpClients.filter((client) => client.configured);
   const mcp = await checkMcpServer({
-    serverUrl: `http://${bridgeOptions.host || '127.0.0.1'}:${bridgeOptions.port || 17531}`,
+    serverUrl: `http://${resolvedBridgeOptions.host || '127.0.0.1'}:${resolvedBridgeOptions.port || 17531}`,
     tokenPath
   });
   const wpsDiagnostics = await runWpsDiagnostics({
-    jsaddonsDir,
+    jsaddonsDir: resolvedJsaddonsDir,
     wpsAppPath,
     bridgeUrl: `http://${bridgeOptions.host || '127.0.0.1'}:${bridgeOptions.port || 17531}`,
     checkBridge: false,
-    checkProcess: checkWpsProcess
+    checkProcess: checkWpsProcess,
+    platform,
+    env
   });
   const wpsDocuments = await readOpenWpsDocuments({ bridge, bridgeOptions, token });
   const documentation = await inspectPublicDocumentation(resolvedProjectRoot);
@@ -355,19 +368,28 @@ export async function runDoctor({
   const launchAgentStatus = checkLaunchAgent
     ? {
       checked: true,
-      ...(await readLaunchAgentStatus({ plistPath: launchAgentPath || defaultLaunchAgentPath() }))
+      ...(await readLaunchAgentStatus({
+        platform,
+        plistPath: launchAgentPath || (platform === 'win32' ? undefined : defaultLaunchAgentPath()),
+        taskName: launchTaskName
+      }))
     }
     : { checked: false, exists: false, plistPath: launchAgentPath || null };
   const launchAgent = {
     ok: launchAgentStatus.checked !== true || launchAgentStatus.exists !== true || (
-      launchAgentStatus.label === DEFAULT_LAUNCH_AGENT_LABEL &&
-      launchAgentStatus.containsLaunchctlInstruction !== true
+      platform === 'win32'
+        ? launchAgentStatus.taskName === launchTaskName
+        : launchAgentStatus.label === DEFAULT_LAUNCH_AGENT_LABEL && launchAgentStatus.containsLaunchctlInstruction !== true
     ),
     checked: launchAgentStatus.checked !== true ? false : true,
     configured: launchAgentStatus.exists === true,
     ...launchAgentStatus
   };
   const checks = {
+    platform: {
+      ok: true,
+      ...platformSummary({ platform, env })
+    },
       manifest: {
         ok: requiredSkills.length > 0,
         path: resolvedManifestPath,
@@ -383,8 +405,12 @@ export async function runDoctor({
       items: retiredSkillChecks
     },
     wpsConfig: {
-      ok: pluginConfig.installed === true && pluginAuth.valid !== false && pluginAuth.disabled !== true,
+      ok: pluginConfig.installed === true && pluginAuth.valid !== false && pluginAuth.disabled !== true && wpsDiagnostics.auth.blockedByFile !== true,
       auth: pluginAuth,
+      blockedByFile: wpsDiagnostics.auth.blockedByFile === true,
+      publishReady: pluginConfig.publishExists === true,
+      wpsTrusted: pluginAuth.authorized === true,
+      trustPending: platform === 'win32' && pluginAuth.authorized !== true,
       ...pluginConfig
     },
     agentToken: {
@@ -432,16 +458,23 @@ export async function runDoctor({
     nextSteps.push('检测到旧的顶层 whitepaper-wps-reviewer；运行 npm run install:skill 完成迁移并清理旧入口。');
   }
   if (!checks.wpsConfig.ok) nextSteps.push('运行 npm run setup，安装 WPS 运行配置并启动 bridge。');
-  if (checks.wpsConfig.auth?.disabled) nextSteps.push('WPS 已禁用 Agent 审阅加载项；运行 npm run wps:authorize 后，在允许的窗口重启 WPS。');
+  if (checks.wpsConfig.auth?.disabled) nextSteps.push(platform === 'win32'
+    ? 'WPS 已禁用 Agent 审阅加载项；不要直接改 authaddin.json，请重新完成 WPS 官方 publish/trust 安装。'
+    : 'WPS 已禁用 Agent 审阅加载项；运行 npm run wps:authorize 后，在允许的窗口重启 WPS。');
+  if (checks.wpsConfig.trustPending) nextSteps.push('Windows 加载项资源已发布但尚未完成 WPS 官方 publish/trust；打开信任页面完成安装后再运行 npm run doctor。');
   if (checks.wpsConfig.auth?.valid === false) nextSteps.push('WPS authaddin.json 格式损坏；请恢复该文件备份后再运行 npm run doctor。');
   if (!checks.agentToken.ok) nextSteps.push('安装凭据缺失；请运行 npm run setup 生成本机 token，再运行 npm run doctor。');
   if (!checks.mcpConfig.ok) nextSteps.push('尚未发现已配置的 Codex/Claude MCP；请运行 npm run setup，或运行 npm run mcp:install。');
   if (!checks.mcp.ok) nextSteps.push('MCP 服务自检失败；请确认发布包完整且 Node.js 版本满足要求，再运行 npm run doctor。');
   if (!checks.documentation.ok) nextSteps.push('README 包含已废弃的正文替换承诺；请清理公开文档后再发布。');
   if (checks.launchAgent.checked && !checks.launchAgent.configured) {
-    nextSteps.push('尚未配置 bridge 登录后自启动；运行 npm run setup 写入本产品 LaunchAgent（不会执行 launchctl）。');
+    nextSteps.push(platform === 'win32'
+      ? '尚未配置 bridge 登录后自启动；运行 npm run setup 写入本产品 Task Scheduler 任务。'
+      : '尚未配置 bridge 登录后自启动；运行 npm run setup 写入本产品 LaunchAgent（不会执行 launchctl）。');
   } else if (!checks.launchAgent.ok) {
-    nextSteps.push('本产品 LaunchAgent 配置异常；运行 npm run setup 重写，或运行 npm run launch-agent:uninstall 后重新安装。');
+    nextSteps.push(platform === 'win32'
+      ? '本产品 Task Scheduler 配置异常；运行 npm run setup 重写，或运行 npm run launch-agent:uninstall 后重新安装。'
+      : '本产品 LaunchAgent 配置异常；运行 npm run setup 重写，或运行 npm run launch-agent:uninstall 后重新安装。');
   }
   if (checks.releaseArtifact.status === 'release-build-in-progress') {
     nextSteps.push('release 正在构建中；等待发布锁释放后再运行 npm run doctor。');

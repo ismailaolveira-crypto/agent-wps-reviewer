@@ -43,7 +43,9 @@ if (args.command === 'help' || args.command === '--help') {
 const options = {
   jsaddonsDir: args.dir,
   pluginUrl: args.url || DEFAULT_PLUGIN_URL,
-  backup: args.backup !== false
+  backup: args.backup !== false,
+  platform: process.platform,
+  mode: process.platform === 'win32' ? 'publish' : 'legacy'
 };
 
 let result;
