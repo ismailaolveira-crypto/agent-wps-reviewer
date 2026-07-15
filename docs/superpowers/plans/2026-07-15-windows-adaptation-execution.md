@@ -1050,8 +1050,10 @@ npm run validate:release-install          ok: true
 npm run validate:windows-install          ok: true
 npm run validate:windows-autostart         ok: true
 npm run check:url-consistency              5/5 passed
-npm run acceptance:audit                   backgroundReady=true; completed=false
-GitHub Actions run 29388274824            verify / Windows Node 20 / Windows Node 22 / macOS all passed
+npm run acceptance:audit -- --platform win32
+                                          backgroundReady=true; platformForegroundAccepted=false;
+                                          noviceInstallAccepted=false; completed=false; manualRequired=2
+GitHub Actions run 29390058972            verify / Windows Node 20 / Windows Node 22 / macOS all passed
 git diff --check                          passed
 node --check（全部修改的 .mjs）            passed
 ```
