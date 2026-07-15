@@ -1036,7 +1036,7 @@ Windows 真实 WPS 验收必须等用户在 Windows 测试机上明确允许。
 - bridge 进程控制增加 Windows `netstat`/`tasklist`/`taskkill` 路径，并以运行实例身份校验 PID，拒绝误杀复用 PID 或非本产品监听器。
 - Windows 自启动使用当前用户 Task Scheduler 任务，不要求管理员权限；增加 `setup.cmd` 新手入口。
 - MCP CLI、token、doctor、URL consistency、release installer 和诊断均已接入平台参数；Windows token 使用用户级 ACL 语义，不把 POSIX mode 当作验收条件。
-- 增加 `test/windows-platform.test.mjs` 和 Windows CI job；CI job 在 `windows-latest` 上执行平台测试、MCP 配置测试、WPS 诊断测试和静态语法检查。
+- 增加 `test/windows-platform.test.mjs`、`test/setup-windows.test.mjs`、`test/wps-publish.test.mjs` 和 Windows CI job；CI job 在 `windows-latest` 上执行平台、setup、publish、MCP 配置、自启动 fixture、WPS 诊断测试和静态语法检查。
 - 增加 Windows 稳定目录事务：`app.next`/`app.previous` 交换、失败回滚和用户级目录 fixture 验证；Task Scheduler 改为调用受控 `wps-bridge-control.mjs start`，保持运行实例身份链。
 - `setup.cmd` 现在实际检查 Node 20+，`scripts/setup.mjs` 在安装后运行 doctor；增加 `autostart:*`、Windows 安装/自启动验证命令和 `wps:publish` 官方工具适配器。
 - Windows 验收事件和人工证据增加 `platform`、OS/WPS 架构及 `runtimeInstanceId` 字段；audit 明确区分后台就绪、平台前台验收、新手安装和可晋级状态。
