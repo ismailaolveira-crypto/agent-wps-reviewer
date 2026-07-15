@@ -1071,7 +1071,7 @@ sha256: 0c9942b9f674f4299918931e5e84ea17f85e8bd11dcf39e1930fd4f8e73e17b2
 ### 尚未验证、不得宣称完成
 
 - 本机是 macOS，未在 Windows 标准用户账户上执行真实安装、卸载、重装和登录自启动。
-- GitHub Actions run `29388274824` 已在 `windows-latest` 的 Node 20/22 矩阵通过，并同时通过 Ubuntu release-install 与 macOS runtime regression；这仍不能替代真实 WPS 实机验收。
+- GitHub Actions run `29390132067` 已在 `windows-latest` 的 Node 20/22 矩阵通过，并同时通过 Ubuntu release-install 与 macOS runtime regression；这仍不能替代真实 WPS 实机验收。
 - 未在 Windows WPS 实机中完成真实 TaskPane 加载、目标定位、原生批注创建、撤销恢复和多文档切换。
 - 尚未收到独立测试者的 `output/novice-install-acceptance.json`；因此 Windows `acceptance:audit --platform win32` 仍应保持 `noviceInstallAccepted=false`，不能宣称无协助新手安装门禁通过。
 - `wps:publish` 已提供锁定 `wpsjs@2.2.3` 的调用适配和 `publishReady/trustPending` 状态，但本机未安装/运行真实 `wpsjs publish`，因此没有把 `publish.html` 当作已信任证据。
