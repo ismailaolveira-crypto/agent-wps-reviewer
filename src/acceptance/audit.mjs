@@ -14,6 +14,7 @@ export const DEFAULT_GATES = [
     id: 'automated-tests',
     label: 'Automated tests',
     command: [process.execPath, ['--test', 'test/*.test.mjs']],
+    timeoutMs: 120000,
     proves: 'Core bridge, MCP, WPS config, release collection, and persistence behavior pass the local test suite.'
   },
   {
@@ -318,7 +319,7 @@ export async function runAcceptanceAudit({
 
   for (const gate of gates) {
     const [command, args] = gate.command;
-    const result = await runCommand(command, args);
+    const result = await runCommand(command, args, { timeoutMs: gate.timeoutMs || 30000 });
     results.push(evaluateGate(gate, result));
   }
 
