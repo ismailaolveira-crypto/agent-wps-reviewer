@@ -12,7 +12,7 @@ const REQUIRED_FILES = [
   'package.json',
   'package-lock.json',
   '.gitignore',
-  'ci/github-actions.yml',
+  '.github/workflows/ci.yml',
   'config/product-manifest.json',
   'skills/whitepaper-chief-editor/SKILL.md',
   'skills/whitepaper-chief-editor/references/capability-manifest.json',

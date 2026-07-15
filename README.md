@@ -30,7 +30,7 @@ bash setup.command
 
 安装完成后新开一个 Agent 会话，直接说“使用 `whitepaper-chief-editor` 审查当前 WPS 文章”。安装器会把用户入口 Skill 和 `agent-wps-reviewer` MCP 条目写入已检测到的 Codex/Claude Code 配置；`npm run doctor` 用于确认两者均可用。
 
-仓库提供 `ci/github-actions.yml` 作为持续集成模板。仓库管理员为发布账号补充 GitHub `workflow` 权限后，将它复制到 `.github/workflows/ci.yml` 即可启用；模板缺少激活权限不会影响插件、bridge、MCP、Skill 或发布包的安装与调用。
+仓库通过 `.github/workflows/ci.yml` 持续验证自动测试、Agent 契约、Skill 压力门、GitHub 发布前检查、发布包构建和干净安装链路。
 
 ## 新手安装
 

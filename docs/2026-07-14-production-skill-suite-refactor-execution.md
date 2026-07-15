@@ -1180,7 +1180,7 @@ PDF 能力更接近独立排版产品，不应继续作为 WPS 批注 Skill 的�
 | 测试数据隔离 | `test/manual-evidence.test.mjs`、`test/acceptance-audit.test.mjs` |
 | 发布包收集与敏感路径排除 | `scripts/build-release.mjs`、`test/release.test.mjs` |
 | GitHub 发布前源文件与 Git 状态检查 | `scripts/github-preflight.mjs`、`package.json` 的 `github:preflight` |
-| GitHub CI 门禁模板 | `ci/github-actions.yml`；发布账号获得 `workflow` 权限后复制到 `.github/workflows/ci.yml` 启用 |
+| GitHub CI 门禁 | `.github/workflows/ci.yml` |
 | 新手安装和公开能力边界 | `README.md`、`docs/AGENT_INTEGRATION.md`、`docs/WPS_INSTALL.md` |
 | 活动文档和定位设计规格 | `docs/superpowers/specs/2026-07-10-agent-reviewer-ui-active-document-design.md` |
 | 批注质量门规格 | `docs/superpowers/specs/2026-07-10-whitepaper-review-quality-gate-design.md` |
