@@ -87,7 +87,7 @@ jobs:
         run: npm ci
 
       - name: Run Windows platform tests
-        run: node --test test/windows-platform.test.mjs test/mcp-config.test.mjs test/wps-diagnostics.test.mjs
+        run: node --test test/windows-platform.test.mjs test/setup-windows.test.mjs test/wps-publish.test.mjs test/mcp-config.test.mjs test/wps-diagnostics.test.mjs
 
       - name: Validate Windows entry points
         shell: pwsh
@@ -98,7 +98,10 @@ jobs:
           node --check .\scripts\setup.mjs
           node --check .\src\install\launchAgent.mjs
           node --check .\src\bridge\processControl.mjs
+          node --check .\src\platform\index.mjs
           npm run validate:agent-contract
+          npm run validate:windows-install
+          npm run validate:windows-autostart
 
   verify-macos:
     runs-on: macos-latest
