@@ -2,7 +2,9 @@
 
 Agent WPS Reviewer 是一个本机白皮书审稿助手。当前发布通道是内部 Beta：WPS 批注模式可供验收；Word 修订和 PDF 复刻暂未发布。未通过真实 WPS 和新手无协助门禁前，不宣称生产完成，也不升级到 1.0。
 
-它把 Codex、Claude Code 或其他本机 agent 的审稿意见投递到 WPS 侧边栏里。用户可以逐条定位正文、拒绝建议，或在 WPS 中接受后生成真实批注；正文不会被替换。
+它把 Codex、Claude Code、WorkBuddy 或其他本机 agent 的审稿意见投递到 WPS 侧边栏里。用户可以逐条定位正文、拒绝建议，或在 WPS 中接受后生成真实批注；正文不会被替换。
+
+给同事分发时使用 GitHub Release 中独立的 macOS 或 Windows 包。让 WorkBuddy 自行下载和配置时，只需把仓库根目录的 `WORKBUDDY_SETUP.md` 链接交给它。
 
 ## 形态
 

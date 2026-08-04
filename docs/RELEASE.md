@@ -14,6 +14,15 @@ npm run release
 - `dist/agent-wps-reviewer-0.2.0.zip`
 - `dist/agent-wps-reviewer-0.2.0-manifest.json`
 
+面向同事生成双平台包：
+
+```bash
+npm run release:platforms
+npm run validate:platform-releases
+```
+
+产物分别为 `*-macos.zip` 与 `*-windows-x64.zip`，每个包都有独立 manifest、SHA-256、`START_HERE.md`、平台配置和 WorkBuddy 自助安装说明。平台包根目录只保留对应系统的安装入口。
+
 发布 ZIP 使用固定文件时间戳和稳定文件清单生成；同一源码即使源文件 mtime 不同，ZIP SHA256 也应保持一致。manifest 同时记录 ZIP 哈希和完整文件清单，`npm run doctor` 会在本地存在发布产物时校验二者一致。
 
 发布过程使用发布锁和临时文件，最后以原子重命名替换 ZIP 与 manifest；多个 Agent 或 CI 同时执行 `npm run release` 时会串行构建，不会互相覆盖中间产物。

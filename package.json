@@ -63,7 +63,9 @@
     "smoke:wps-resources": "node scripts/smoke-wps-resources.mjs",
     "check:url-consistency": "node scripts/check-url-consistency.mjs",
     "acceptance:audit": "node scripts/acceptance-audit.mjs",
-    "release": "node scripts/build-release.mjs"
+    "release": "node scripts/build-release.mjs",
+    "release:platforms": "node scripts/build-platform-releases.mjs",
+    "validate:platform-releases": "node scripts/validate-platform-releases.mjs"
   },
   "engines": {
     "node": ">=20"

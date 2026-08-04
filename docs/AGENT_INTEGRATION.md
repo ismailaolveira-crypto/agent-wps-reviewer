@@ -8,7 +8,7 @@ npm run setup
 npm run doctor
 ```
 
-这两个命令安装 WPS 运行配置、唯一用户入口 `whitepaper-chief-editor` 及其内置 WPS 执行器 bundle、同名 MCP 条目并启动本地 bridge。安装后不会把执行器作为同级用户 Skill 暴露；覆盖已有入口前会生成备份，并会迁移旧版本的顶层执行器。安装过程不会启动 WPS。MCP 配置只处理 `agent-wps-reviewer`，不会覆盖其他 MCP。
+这两个命令安装 WPS 运行配置、唯一用户入口 `whitepaper-chief-editor` 及其内置 WPS 执行器 bundle、同名 MCP 条目并启动本地 bridge。安装后不会把执行器作为同级用户 Skill 暴露；覆盖已有入口前会生成备份，并会迁移旧版本的顶层执行器。安装过程不会启动 WPS。MCP 配置会检测 Codex、Claude Code 和 WorkBuddy 的 `codebuddy` CLI，只处理 `agent-wps-reviewer`，不会覆盖其他 MCP。
 
 维护人员只安装 Skill：
 

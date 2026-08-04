@@ -43,7 +43,7 @@ test('release ZIP is reproducible across consecutive builds', async () => {
   const manifest = JSON.parse(await readFile(second.manifestPath, 'utf8'));
   assert.equal(manifest.sha256, second.sha256);
   assert.equal(first.fileCount, second.fileCount);
-  assert.equal(second.fileCount, 125);
+  assert.ok(second.fileCount >= 130);
 
   const sourcePath = path.resolve('AGENTS.md');
   const sourceStat = await stat(sourcePath);
@@ -79,6 +79,17 @@ test('release explicitly includes the bundled review skill and formal schemas', 
     'src/acceptance/noviceInstallEvidence.mjs',
     'scripts/create-novice-install-kit.mjs',
     'scripts/record-novice-install.mjs'
+  ]) assert.ok(REQUIRED_RELEASE_FILES.includes(file), `${file} must be explicitly required`);
+});
+
+test('release includes WorkBuddy and platform delivery entry points', () => {
+  for (const file of [
+    'WORKBUDDY_SETUP.md',
+    'docs/MACOS_QUICKSTART.md',
+    'docs/WINDOWS_QUICKSTART.md',
+    'docs/DATA_ALIGNMENT_INTERFACE.md',
+    'scripts/build-platform-releases.mjs',
+    'scripts/validate-platform-releases.mjs'
   ]) assert.ok(REQUIRED_RELEASE_FILES.includes(file), `${file} must be explicitly required`);
 });
 

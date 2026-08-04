@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import {
   buildClaudeMcpAddArgs,
   buildCodexMcpAddArgs,
+  buildWorkBuddyMcpAddArgs,
   installMcpClients,
   inspectMcpClients,
   uninstallMcpClients
@@ -19,6 +20,9 @@ test('MCP add command construction keeps the token in a file and scopes the serv
   ]);
   assert.deepEqual(buildClaudeMcpAddArgs({ name: 'agent-wps-reviewer', nodePath, mcpPath, tokenPath }), [
     'mcp', 'add', 'agent-wps-reviewer', '--env', `WPS_REVIEWER_TOKEN_FILE=${tokenPath}`, '--', nodePath, mcpPath
+  ]);
+  assert.deepEqual(buildWorkBuddyMcpAddArgs({ name: 'agent-wps-reviewer', nodePath, mcpPath, tokenPath }), [
+    'mcp', 'add', 'agent-wps-reviewer', nodePath, mcpPath
   ]);
 });
 
@@ -37,29 +41,31 @@ test('MCP installer replaces only the product entry for available agent CLIs', a
     nodePath,
     mcpPath,
     tokenPath,
-    cliPaths: { codex: 'codex-test', claude: 'claude-test' },
+    cliPaths: { codex: 'codex-test', claude: 'claude-test', workbuddy: 'workbuddy-test' },
     runner
   });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(result.configured, ['codex', 'claude']);
+  assert.deepEqual(result.configured, ['codex', 'claude', 'workbuddy']);
   assert.deepEqual(calls, [
     { command: 'codex-test', args: ['mcp', 'get', 'agent-wps-reviewer', '--json'] },
     { command: 'codex-test', args: ['mcp', 'remove', 'agent-wps-reviewer'] },
     { command: 'codex-test', args: ['mcp', 'add', '--env', `WPS_REVIEWER_TOKEN_FILE=${tokenPath}`, 'agent-wps-reviewer', '--', nodePath, mcpPath] },
     { command: 'claude-test', args: ['mcp', 'get', 'agent-wps-reviewer'] },
-    { command: 'claude-test', args: ['mcp', 'add', 'agent-wps-reviewer', '--env', `WPS_REVIEWER_TOKEN_FILE=${tokenPath}`, '--', nodePath, mcpPath] }
+    { command: 'claude-test', args: ['mcp', 'add', 'agent-wps-reviewer', '--env', `WPS_REVIEWER_TOKEN_FILE=${tokenPath}`, '--', nodePath, mcpPath] },
+    { command: 'workbuddy-test', args: ['mcp', 'get', 'agent-wps-reviewer'] },
+    { command: 'workbuddy-test', args: ['mcp', 'add', 'agent-wps-reviewer', nodePath, mcpPath] }
   ]);
 });
 
 test('MCP installer treats missing CLIs as optional and does not fail setup', async () => {
   const result = await installMcpClients({
-    cliPaths: { codex: 'missing-codex', claude: 'missing-claude' },
+    cliPaths: { codex: 'missing-codex', claude: 'missing-claude', workbuddy: 'missing-workbuddy' },
     runner: async () => ({ code: null, error: { code: 'ENOENT' }, stdout: '', stderr: '' })
   });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(result.skipped, ['codex', 'claude']);
+  assert.deepEqual(result.skipped, ['codex', 'claude', 'workbuddy']);
   assert.deepEqual(result.configured, []);
 });
 
@@ -67,7 +73,7 @@ test('MCP status and uninstall are read-only or scoped to the exact product name
   const statusCalls = [];
   const status = await inspectMcpClients({
     name: 'agent-wps-reviewer',
-    cliPaths: { codex: 'codex-test', claude: 'claude-test' },
+    cliPaths: { codex: 'codex-test', claude: 'claude-test', workbuddy: 'workbuddy-test' },
     runner: async (request) => {
       statusCalls.push(request);
       return { code: 1, error: null, stdout: '', stderr: '' };
@@ -79,7 +85,7 @@ test('MCP status and uninstall are read-only or scoped to the exact product name
   const uninstallCalls = [];
   const removed = await uninstallMcpClients({
     name: 'agent-wps-reviewer',
-    cliPaths: { codex: 'codex-test', claude: 'claude-test' },
+    cliPaths: { codex: 'codex-test', claude: 'claude-test', workbuddy: 'workbuddy-test' },
     runner: async (request) => {
       uninstallCalls.push(request);
       return { code: 1, error: null, stdout: '', stderr: '' };
@@ -110,13 +116,14 @@ test('MCP install transaction can roll back only the product entry', async () =>
     nodePath,
     mcpPath,
     tokenPath,
-    cliPaths: { codex: 'codex-test', claude: 'claude-test' },
+    cliPaths: { codex: 'codex-test', claude: 'claude-test', workbuddy: 'workbuddy-test' },
     runner
   });
 
   await result.rollback();
-  const rollbackCalls = calls.slice(-3).map(({ command, args }) => ({ command, args }));
+  const rollbackCalls = calls.slice(-4).map(({ command, args }) => ({ command, args }));
   assert.deepEqual(rollbackCalls, [
+    { command: 'workbuddy-test', args: ['mcp', 'remove', 'agent-wps-reviewer'] },
     { command: 'claude-test', args: ['mcp', 'remove', 'agent-wps-reviewer'] },
     { command: 'codex-test', args: ['mcp', 'remove', 'agent-wps-reviewer'] },
     { command: 'codex-test', args: ['mcp', 'add', '--env', `WPS_REVIEWER_TOKEN_FILE=${tokenPath}`, 'agent-wps-reviewer', '--', nodePath, mcpPath] }

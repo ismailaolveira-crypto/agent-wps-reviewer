@@ -61,9 +61,20 @@ export function buildClaudeMcpAddArgs({
   return args;
 }
 
+export function buildWorkBuddyMcpAddArgs({
+  name = DEFAULT_MCP_NAME,
+  nodePath = process.execPath,
+  mcpPath = path.join(PROJECT_ROOT, 'bin/wps-reviewer-mcp.mjs')
+} = {}) {
+  // The MCP server reads the product token from its standard per-user file,
+  // so WorkBuddy does not need a copied secret in its CLI configuration.
+  return ['mcp', 'add', name, nodePath, mcpPath];
+}
+
 const CLIENTS = [
   { id: 'codex', command: 'codex', add: buildCodexMcpAddArgs },
-  { id: 'claude', command: 'claude', add: buildClaudeMcpAddArgs }
+  { id: 'claude', command: 'claude', add: buildClaudeMcpAddArgs },
+  { id: 'workbuddy', command: 'codebuddy', add: buildWorkBuddyMcpAddArgs }
 ];
 
 function clientDefinition(client, cliPaths = {}) {
