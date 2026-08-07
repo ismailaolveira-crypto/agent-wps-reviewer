@@ -162,6 +162,9 @@ function buildRecommendations({ plugin, auth, bridge, processInfo, platform }) {
   if (!plugin.installed) {
     recommendations.push('Run npm run wps:install to install WPS plugin config.');
   }
+  if (plugin.debugEnabled) {
+    recommendations.push('检测到 WPS 加载项开发调试属性（debug/enable_dev）；这会显示“打开JS调试器”白色栏。请在允许的窗口关闭 WPS 后运行 npm run wps:install 重新生成生产配置。');
+  }
   if (auth.valid === false) {
     recommendations.push('WPS authaddin.json 格式损坏；请恢复该文件备份后再运行 npm run doctor。');
   }
@@ -212,7 +215,7 @@ export async function runWpsDiagnostics({
   const pluginConfigUpdatedAt = await newestMtime([plugin.filePath, plugin.publishPath]);
 
   const diagnostics = {
-    ok: plugin.installed && auth.valid !== false && auth.disabled !== true && !blockedByFile && (!bridge.checked || bridge.running),
+    ok: plugin.installed && plugin.debugEnabled !== true && auth.valid !== false && auth.disabled !== true && !blockedByFile && (!bridge.checked || bridge.running),
     generatedAt: new Date().toISOString(),
     platform: platformSummary({ platform, env }),
     wpsApp,

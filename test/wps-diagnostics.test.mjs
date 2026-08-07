@@ -20,6 +20,7 @@ test('runWpsDiagnostics reports installed plugin files from a fake jsaddons dir'
     assert.equal(diagnostics.plugin.installed, true);
     assert.equal(diagnostics.plugin.exists, true);
     assert.equal(diagnostics.plugin.publishExists, true);
+    assert.equal(diagnostics.plugin.debugEnabled, false);
     assert.equal(diagnostics.auth.exists, false);
     assert.equal(diagnostics.wpsApp.exists, false);
     assert.equal(diagnostics.bridge.checked, false);
@@ -101,6 +102,29 @@ test('runWpsDiagnostics flags missing plugin installation', async () => {
 
     assert.equal(diagnostics.plugin.installed, false);
     assert.ok(diagnostics.recommendations.some((item) => item.includes('wps:install')));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('runWpsDiagnostics flags legacy WPS development attributes', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'wps-diag-debug-'));
+  try {
+    await writeFile(path.join(dir, 'publish.xml'), [
+      '<jsplugins>',
+      '  <jspluginonline name="WpsAgentReviewer" type="wps" url="http://127.0.0.1:17531/WpsAgentReviewer/" debug="" enable="enable_dev"/>',
+      '</jsplugins>',
+      ''
+    ].join('\n'));
+    const diagnostics = await runWpsDiagnostics({
+      jsaddonsDir: dir,
+      wpsAppPath: '/missing/wpsoffice.app',
+      checkBridge: false,
+      checkProcess: false
+    });
+    assert.equal(diagnostics.ok, false);
+    assert.equal(diagnostics.plugin.debugEnabled, true);
+    assert.match(diagnostics.recommendations.join('\n'), /打开JS调试器/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

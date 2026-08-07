@@ -405,7 +405,7 @@ export async function runDoctor({
       items: retiredSkillChecks
     },
     wpsConfig: {
-      ok: pluginConfig.installed === true && pluginAuth.valid !== false && pluginAuth.disabled !== true && wpsDiagnostics.auth.blockedByFile !== true,
+      ok: pluginConfig.installed === true && pluginConfig.debugEnabled !== true && pluginAuth.valid !== false && pluginAuth.disabled !== true && wpsDiagnostics.auth.blockedByFile !== true,
       auth: pluginAuth,
       blockedByFile: wpsDiagnostics.auth.blockedByFile === true,
       publishReady: pluginConfig.publishExists === true,
@@ -458,6 +458,7 @@ export async function runDoctor({
     nextSteps.push('检测到旧的顶层 whitepaper-wps-reviewer；运行 npm run install:skill 完成迁移并清理旧入口。');
   }
   if (!checks.wpsConfig.ok) nextSteps.push('运行 npm run setup，安装 WPS 运行配置并启动 bridge。');
+  if (checks.wpsConfig.debugEnabled) nextSteps.push('检测到 WPS 开发调试属性；关闭 WPS 后运行 npm run wps:install，重新生成不带 debug/enable_dev 的生产配置。');
   if (checks.wpsConfig.auth?.disabled) nextSteps.push(platform === 'win32'
     ? 'WPS 已禁用 Agent 审阅加载项；不要直接改 authaddin.json，请重新完成 WPS 官方 publish/trust 安装。'
     : 'WPS 已禁用 Agent 审阅加载项；运行 npm run wps:authorize 后，在允许的窗口重启 WPS。');

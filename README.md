@@ -64,6 +64,8 @@ Windows 首次安装使用 WPS 官方 `publish/trust` 流程；安装器不会�
 
 Windows 安装输出会分别报告 `ready`、`publishReady`、`wpsTrustPending` 和 `wpsTrusted`；写入 `publish.xml` 只代表本地资源已准备，不代表 WPS 官方信任已经完成。完成信任后再运行 `npm run doctor`。
 
+生产安装不会启用 WPS JS 调试属性。如果顶部出现“打开JS调试器”白色栏，请按 [WPS 安装排障说明](docs/WPS_INSTALL.md) 检查并清理旧的开发配置。
+
 安装完成后再打开 WPS。若没有显示 `Agent 审阅`，只在允许的测试窗口重启 WPS；Windows 还应重新检查官方信任安装状态。普通用户不需要分别安装 Skill、插件、bridge 或 LaunchAgent/Task Scheduler。
 
 安装失败不会留下半套产品配置：安装器会回滚本产品的 WPS 配置、Skill、token、bridge、LaunchAgent 和同名 MCP 条目，不会改动其他插件或其他 MCP 条目。

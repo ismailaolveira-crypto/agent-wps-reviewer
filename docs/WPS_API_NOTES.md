@@ -11,6 +11,8 @@ Checked sources:
 
 Implementation choices:
 
+- Production `publish.xml` and `jsplugins.xml` entries intentionally omit `debug=""` and `enable="enable_dev"`. Those are development/debug attributes; keeping them in a user install exposes WPS's "打开JS调试器" UI. Development troubleshooting must be explicit and must not be used as production acceptance evidence.
+
 - Task pane creation tries `Application.CreateTaskPane`, `Application.CreateTaskpane`, `wps.CreateTaskPane`, then `wps.CreateTaskpane`.
 - Comment creation tries the object shape first: `Comments.Add({ Range: { Start, End }, Text })`.
 - It then falls back to `Comments.Add({ Range, Text })` and `Comments.Add(range, text)`.

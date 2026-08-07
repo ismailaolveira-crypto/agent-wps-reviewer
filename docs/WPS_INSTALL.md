@@ -92,6 +92,26 @@ npm run wps:status
 
 WPS 加载后会出现 `Agent 审阅` 选项卡，点击 `审阅收件箱` 打开侧边栏。
 
+### Windows 顶部白色“打开JS调试器”栏
+
+如果 WPS 顶部出现包含“审阅收件箱”和“打开JS调试器”的白色栏，通常不是
+侧栏页面无法关闭，而是旧的 `publish.xml`/`jsplugins.xml` 仍带有
+`debug=""` 或 `enable="enable_dev"` 开发属性。生产安装现在不会再生成这些属性。
+
+在允许的维护窗口关闭 WPS 后，先查看：
+
+```bash
+npm run wps:status
+npm run doctor
+```
+
+如果输出包含 `debugEnabled: true`，运行 `npm run wps:install` 重新生成本产品配置，
+再重新打开 WPS。不要直接修改 `authaddin.json`，也不要删除其他加载项的配置；旧
+WPS 进程可能缓存配置，必须在用户允许的窗口完全退出并重新打开后验证。
+
+该判断与 WPS 官方 `CreateTaskPane`/publish 模式区分：`debug` 属性用于网页调试，
+不是关闭 Agent 审阅侧栏的业务按钮。
+
 卸载：
 
 ```bash

@@ -288,7 +288,7 @@ export function evaluateGate(gate, result) {
   }
 
   if (passed && gate.id === 'wps-plugin-config') {
-    passed = evidence?.installed === true && evidence?.exists === true && evidence?.publishExists === true;
+    passed = evidence?.installed === true && evidence?.exists === true && evidence?.publishExists === true && evidence?.debugEnabled !== true;
   }
 
   if (passed && gate.id === 'wps-readiness') {

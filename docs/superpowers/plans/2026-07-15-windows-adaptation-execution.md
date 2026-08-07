@@ -1046,7 +1046,7 @@ Windows 真实 WPS 验收必须等用户在 Windows 测试机上明确允许。
 ### 已验证
 
 ```text
-npm test                                  284 passed, 0 failed
+npm test                                  288 passed, 0 failed
 npm run validate:release-install          ok: true
 npm run validate:windows-install          ok: true
 npm run validate:windows-autostart         ok: true
@@ -1065,8 +1065,8 @@ node --check（全部修改的 .mjs）            passed
 version: 0.2.0
 channel: beta
 productionReady: false
-fileCount: 125
-sha256: 18ed27e856d6c91ccce8cd37021a6d4de1e2f379f883e14d542643752276b5df
+fileCount: 131
+sha256: a6fbc97a9d95cc284db25efe51e9761cad7f0ece9b63b8e4ccb431f4c02cc294
 ```
 
 ### 尚未验证、不得宣称完成
@@ -1086,3 +1086,37 @@ sha256: 18ed27e856d6c91ccce8cd37021a6d4de1e2f379f883e14d542643752276b5df
 3. 运行 `npm run doctor`，确认 Task Scheduler、MCP、publish 资源和 URL consistency 均通过。
 4. 由用户明确允许后，按 `docs/ACCEPTANCE.md` 完成 WPS 实机侧栏、定位、批注、撤销和多文档验收。
 5. 将 Windows CI、实机 acceptance events 和 `acceptance:audit` 输出附到 release 记录；在所有 Stop-ship 门禁通过前不得晋级 production。
+
+## 13. Windows 白色调试栏问题（2026-08-07）
+
+### 定位结论
+
+截图中的“打开JS调试器”不是 `public/addin/taskpane.html` 自己绘制的关闭按钮，
+而是 WPS 加载项开发调试 UI。旧的 `publish.xml`/`jsplugins.xml` 条目包含
+`debug=""` 和 `enable="enable_dev"`，会让 WPS 显示该白色调试栏。项目的
+`src/wps/pluginConfig.mjs` 原先在生产安装路径也生成了这两个属性，Windows
+`setup.cmd` 因而可能留下无法从侧栏页面关闭的开发栏。
+
+### 已修复
+
+- 生产 `buildPluginEntry`、`buildPublishXml` 和 `public/jsplugins.xml` 不再写入
+  `debug`/`enable_dev`。
+- 旧配置会被下一次 `npm run wps:install` 定向重写；不会修改其他加载项或
+  `authaddin.json`。
+- `wps:status`、`doctor` 和只读诊断会报告 `debugEnabled`，并提示在允许的窗口
+  关闭并重新打开 WPS 后重写本产品配置。
+- `acceptance:audit` 的 WPS 配置门禁拒绝仍带开发调试属性的配置。
+
+### 用户侧恢复步骤
+
+在用户明确允许的维护窗口中：
+
+1. 完全退出 WPS（不由后台脚本强制结束）。
+2. 运行 `npm run wps:status` 或 `npm run doctor`，确认是否有 `debugEnabled: true`。
+3. 运行 `npm run wps:install` 重写本产品配置，再重新打开 WPS。
+4. 只有白色调试栏消失、侧栏正常显示后，才继续真实 WPS 验收。
+
+### 本机验证边界
+
+已用单元测试验证生成配置不带开发属性、旧配置可被识别、doctor/diagnostics 会报警；
+尚未在 Windows WPS 前台执行恢复，因此不能把本机测试当成 Windows 实机修复证明。

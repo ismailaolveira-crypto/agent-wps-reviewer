@@ -23,7 +23,7 @@ async function withTempDir(fn) {
 test('buildPluginEntry returns WPS online plugin XML', () => {
   assert.equal(
     buildPluginEntry('http://127.0.0.1:17531/WpsAgentReviewer/'),
-    '<jspluginonline name="WpsAgentReviewer" type="wps" url="http://127.0.0.1:17531/WpsAgentReviewer/" debug="" enable="enable_dev" install="http://127.0.0.1:17531/WpsAgentReviewer/"/>'
+    '<jspluginonline name="WpsAgentReviewer" type="wps" url="http://127.0.0.1:17531/WpsAgentReviewer/" install="http://127.0.0.1:17531/WpsAgentReviewer/"/>'
   );
 });
 
@@ -31,9 +31,23 @@ test('buildPublishXml returns Mac-friendly publish XML', () => {
   const xml = buildPublishXml('http://127.0.0.1:17531/WpsAgentReviewer/');
   assert.match(xml, /<jsplugins>/);
   assert.match(xml, /name="WpsAgentReviewer"/);
-  assert.match(xml, /debug=""/);
-  assert.match(xml, /enable="enable_dev"/);
+  assert.doesNotMatch(xml, /debug\s*=/);
+  assert.doesNotMatch(xml, /enable\s*=\s*["']enable_dev["']/);
   assert.match(xml, /install="http:\/\/127\.0\.0\.1:17531\/WpsAgentReviewer\/"/);
+});
+
+test('readPluginConfigStatus detects legacy development attributes', async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(path.join(dir, 'publish.xml'), [
+      '<jsplugins>',
+      '  <jspluginonline name="WpsAgentReviewer" type="wps" url="http://127.0.0.1:17531/WpsAgentReviewer/" debug="" enable="enable_dev"/>',
+      '</jsplugins>',
+      ''
+    ].join('\n'));
+    const status = await readPluginConfigStatus({ jsaddonsDir: dir });
+    assert.equal(status.debugEnabled, true);
+    assert.deepEqual(status.debugSources, ['publish.xml']);
+  });
 });
 
 test('installPluginConfig creates jsplugins.xml and is idempotent', async () => {
@@ -51,6 +65,8 @@ test('installPluginConfig creates jsplugins.xml and is idempotent', async () => 
     assert.equal((xml.match(/name="WpsAgentReviewer"/g) || []).length, 1);
     assert.equal((publishXml.match(/name="WpsAgentReviewer"/g) || []).length, 1);
     assert.match(xml, /<jsplugins>/);
+    assert.doesNotMatch(publishXml, /debug\s*=/);
+    assert.doesNotMatch(publishXml, /enable\s*=\s*["']enable_dev["']/);
   });
 });
 
@@ -69,6 +85,18 @@ test('installPluginConfig preserves existing plugin entries', async () => {
 
     assert.match(xml, /OtherPlugin/);
     assert.match(xml, /WpsAgentReviewer/);
+  });
+});
+
+test('installPluginConfig removes development attributes from an existing Agent entry', async () => {
+  await withTempDir(async (dir) => {
+    const oldEntry = '<jspluginonline name="WpsAgentReviewer" type="wps" url="http://127.0.0.1:17531/WpsAgentReviewer/" debug="" enable="enable_dev" install="http://127.0.0.1:17531/WpsAgentReviewer/"/>';
+    await writeFile(path.join(dir, 'publish.xml'), `<jsplugins>\n  ${oldEntry}\n</jsplugins>\n`);
+    await installPluginConfig({ jsaddonsDir: dir, backup: false, platform: 'win32', mode: 'publish' });
+    const publishXml = await readFile(path.join(dir, 'publish.xml'), 'utf8');
+    assert.doesNotMatch(publishXml, /debug\s*=/);
+    assert.doesNotMatch(publishXml, /enable\s*=\s*["']enable_dev["']/);
+    assert.equal((await readPluginConfigStatus({ jsaddonsDir: dir })).debugEnabled, false);
   });
 });
 

@@ -1,3 +1,3 @@
 <jsplugins>
-  <jspluginonline name="WpsAgentReviewer" type="wps" url="http://127.0.0.1:17531/WpsAgentReviewer/" debug="" enable="enable_dev" install="http://127.0.0.1:17531/WpsAgentReviewer/"/>
+  <jspluginonline name="WpsAgentReviewer" type="wps" url="http://127.0.0.1:17531/WpsAgentReviewer/" install="http://127.0.0.1:17531/WpsAgentReviewer/"/>
 </jsplugins>

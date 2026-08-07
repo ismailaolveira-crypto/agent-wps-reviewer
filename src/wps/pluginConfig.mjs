@@ -15,7 +15,7 @@ export function defaultJsaddonsDir({ platform = process.platform, env = process.
 
 export function buildPluginEntry(pluginUrl = DEFAULT_PLUGIN_URL, pluginName = DEFAULT_PLUGIN_NAME) {
   const escapedUrl = escapeXml(pluginUrl);
-  return `<jspluginonline name="${escapeXml(pluginName)}" type="wps" url="${escapedUrl}" debug="" enable="enable_dev" install="${escapedUrl}"/>`;
+  return `<jspluginonline name="${escapeXml(pluginName)}" type="wps" url="${escapedUrl}" install="${escapedUrl}"/>`;
 }
 
 export function buildPublishXml(pluginUrl = DEFAULT_PLUGIN_URL, pluginName = DEFAULT_PLUGIN_NAME) {
@@ -37,6 +37,14 @@ function escapeXml(value) {
 
 function pluginLinePattern(pluginName) {
   return new RegExp(`^\\s*<jspluginonline\\b[^>]*\\bname=["']${escapeRegExp(pluginName)}["'][^>]*/>\\s*$`, 'm');
+}
+
+function pluginLine(xml, pluginName) {
+  return String(xml || '').split(/\r?\n/).find((line) => pluginLinePattern(pluginName).test(line)) || '';
+}
+
+function hasDevelopmentAttributes(line) {
+  return /\bdebug\s*=|\benable\s*=\s*["']enable_dev["']/i.test(line);
 }
 
 function escapeRegExp(value) {
@@ -196,6 +204,8 @@ export async function readPluginConfigStatus({
   const publishPath = path.join(jsaddonsDir, 'publish.xml');
   const existing = await readExisting(filePath);
   const publishExisting = await readExisting(publishPath);
+  const existingLine = pluginLine(existing, pluginName);
+  const publishLine = pluginLine(publishExisting, pluginName);
   return {
     filePath,
     publishPath,
@@ -204,6 +214,11 @@ export async function readPluginConfigStatus({
     publishExists: Boolean(publishExisting),
     bytes: Buffer.byteLength(existing),
     publishBytes: Buffer.byteLength(publishExisting),
+    debugEnabled: hasDevelopmentAttributes(existingLine) || hasDevelopmentAttributes(publishLine),
+    debugSources: [
+      ...(hasDevelopmentAttributes(existingLine) ? ['jsplugins.xml'] : []),
+      ...(hasDevelopmentAttributes(publishLine) ? ['publish.xml'] : [])
+    ],
     platform
   };
 }
