@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productVersion": "0.2.0",
+  "productVersion": "0.2.1",
   "capabilities": {
     "wps-comment": {
       "status": "production",

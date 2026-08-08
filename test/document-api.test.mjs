@@ -146,6 +146,26 @@ test('task pane can read active WPS metadata without exposing document text', as
   });
 });
 
+test('WPS document heartbeats persist one logical session across changing runtime handles', async () => {
+  await withServer(async ({ baseUrl, store }) => {
+    for (const documentHandle of ['runtime-a', 'runtime-b', 'runtime-c']) {
+      const registered = await postJson(baseUrl, '/api/wps/documents/active', {
+        clientId: 'wps-heartbeat',
+        documentHandle,
+        documentKey: 'path:/docs/report.docx',
+        identityKind: 'path',
+        title: 'Report.docx',
+        fullName: '/docs/Report.docx',
+        lastSeenAt: Date.now(),
+        lastActiveAt: Date.now()
+      });
+      assert.equal(registered.response.status, 200);
+    }
+
+    assert.deepEqual(store.listSessions().map((item) => item.docSessionId), ['path:/docs/report.docx']);
+  });
+});
+
 test('bridge lists open background documents and activates the requested target by handle', async () => {
   await withServer(async ({ baseUrl, commandBroker }) => {
     await postJson(baseUrl, '/api/wps/documents/active', {

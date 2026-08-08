@@ -31,6 +31,7 @@ test('bridge health endpoint reports service', async () => {
     assert.equal(body.service, 'agent-wps-reviewer');
     assert.equal(body.productVersion, runtimeIdentity.productVersion);
     assert.equal(body.buildFingerprint, runtimeIdentity.buildFingerprint);
+    assert.deepEqual(body.sessionCompaction, { removed: 0, kept: 0 });
   });
 });
 

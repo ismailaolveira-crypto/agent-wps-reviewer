@@ -1,6 +1,6 @@
 # Release
 
-当前版本 `0.2.0` 明确属于 `beta` 通道。安装成功、自动测试通过或浏览器可以演示，都不能单独把产品标记为生产完成；真实 WPS 前台验收、新手无协助安装和 GitHub 唯一事实源门禁通过后，才允许单独进行发布晋级。
+当前版本 `0.2.1` 明确属于 `beta` 通道。安装成功、自动测试通过或浏览器可以演示，都不能单独把产品标记为生产完成；真实 WPS 前台验收、新手无协助安装和 GitHub 唯一事实源门禁通过后，才允许单独进行发布晋级。
 
 生成离线交付包：
 
@@ -11,8 +11,8 @@ npm run release
 
 产物：
 
-- `dist/agent-wps-reviewer-0.2.0.zip`
-- `dist/agent-wps-reviewer-0.2.0-manifest.json`
+- `dist/agent-wps-reviewer-0.2.1.zip`
+- `dist/agent-wps-reviewer-0.2.1-manifest.json`
 
 面向同事生成双平台包：
 
@@ -22,6 +22,8 @@ npm run validate:platform-releases
 ```
 
 产物分别为 `*-macos.zip` 与 `*-windows-x64.zip`，每个包都有独立 manifest、SHA-256、`START_HERE.md`、平台配置和 WorkBuddy 自助安装说明。平台包根目录只保留对应系统的安装入口。
+
+公开仓库的 Agent 可以用 `npm run download:latest -- --platform macos|windows` 无登录下载最新平台包；下载器会从 GitHub Release 读取 manifest 并在落盘前校验 SHA-256。
 
 发布 ZIP 使用固定文件时间戳和稳定文件清单生成；同一源码即使源文件 mtime 不同，ZIP SHA256 也应保持一致。manifest 同时记录 ZIP 哈希和完整文件清单，`npm run doctor` 会在本地存在发布产物时校验二者一致。
 

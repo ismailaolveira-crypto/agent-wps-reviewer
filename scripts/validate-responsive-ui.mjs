@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,6 +26,44 @@ function loadPlaywright() {
 }
 
 const { chromium } = loadPlaywright();
+
+function resolveChromiumExecutable() {
+  if (process.env.PLAYWRIGHT_EXECUTABLE_PATH) return process.env.PLAYWRIGHT_EXECUTABLE_PATH;
+  const cacheRoots = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    path.join(os.homedir(), 'Library/Caches/ms-playwright'),
+    path.join(os.homedir(), '.cache/ms-playwright'),
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'ms-playwright') : ''
+  ].filter(Boolean);
+  const executableRelativePaths = process.platform === 'win32'
+    ? ['chrome-headless-shell-win64/chrome-headless-shell.exe']
+    : process.platform === 'darwin'
+      ? [`chrome-headless-shell-mac-${process.arch === 'arm64' ? 'arm64' : 'x64'}/chrome-headless-shell`]
+      : ['chrome-headless-shell-linux64/chrome-headless-shell'];
+
+  for (const cacheRoot of cacheRoots) {
+    if (!existsSync(cacheRoot)) continue;
+    const cached = readdirSync(cacheRoot)
+      .filter((name) => name.startsWith('chromium_headless_shell-'))
+      .sort((left, right) => right.localeCompare(left, undefined, { numeric: true }));
+    for (const name of cached) {
+      for (const relativePath of executableRelativePaths) {
+        const executable = path.join(cacheRoot, name, relativePath);
+        if (existsSync(executable)) return executable;
+      }
+    }
+  }
+  const systemBrowsers = process.platform === 'win32'
+    ? [
+        process.env.PROGRAMFILES ? path.join(process.env.PROGRAMFILES, 'Google/Chrome/Application/chrome.exe') : '',
+        process.env['PROGRAMFILES(X86)'] ? path.join(process.env['PROGRAMFILES(X86)'], 'Google/Chrome/Application/chrome.exe') : ''
+      ]
+    : process.platform === 'darwin'
+      ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+      : ['/usr/bin/google-chrome', '/usr/bin/chromium'];
+  return systemBrowsers.find((candidate) => candidate && existsSync(candidate)) || '';
+}
+
 const outputDir = path.resolve('output/playwright');
 await mkdir(outputDir, { recursive: true });
 const dataDir = await mkdtemp(path.join(os.tmpdir(), 'wps-responsive-'));
@@ -41,7 +80,11 @@ await store.addSuggestion({
   metadata: { category: '样本边界', reviewStatus: 'browser-fixture' }
 });
 
-const browser = await chromium.launch({ headless: true });
+const executablePath = resolveChromiumExecutable();
+const browser = await chromium.launch({
+  headless: true,
+  ...(executablePath ? { executablePath } : {})
+});
 const results = [];
 try {
   for (const width of [280, 300, 320, 360, 420, 480, 640]) {

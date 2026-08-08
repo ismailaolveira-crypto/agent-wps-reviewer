@@ -3,7 +3,44 @@ import { cp, mkdir, mkdtemp, rm, utimes, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { inspectReleaseArtifact, runDoctor } from '../src/install/doctor.mjs';
+import { buildDoctorFixPlan, buildDoctorReadiness, inspectReleaseArtifact, runDoctor } from '../src/install/doctor.mjs';
+
+function readyChecks(overrides = {}) {
+  return {
+    skills: { ok: true },
+    retiredSkills: { ok: true },
+    wpsConfig: { ok: true, installed: true, debugEnabled: false },
+    agentToken: { ok: true },
+    mcpConfig: { ok: true },
+    bridge: { ok: true },
+    mcp: { ok: true },
+    documentation: { ok: true },
+    releaseArtifact: { ok: true },
+    launchAgent: { ok: true },
+    wpsRuntime: { ok: true, installed: true, process: { checked: true, running: false } },
+    wpsDocuments: { ok: true, checked: true, count: 1 },
+    ...overrides
+  };
+}
+
+test('doctor readiness distinguishes ready, no-document, and maintenance-window states', () => {
+  assert.equal(buildDoctorReadiness(readyChecks()).status, 'ready');
+  assert.equal(buildDoctorReadiness(readyChecks({ wpsDocuments: { ok: true, checked: true, count: 0 } })).status, 'ready-no-document');
+  assert.equal(buildDoctorReadiness(readyChecks({
+    wpsConfig: { ok: false, installed: true, debugEnabled: true },
+    wpsRuntime: { ok: true, installed: true, process: { checked: true, running: true } }
+  })).status, 'maintenance-window-required');
+});
+
+test('doctor fix plan never rewrites WPS config while WPS is running', () => {
+  const plan = buildDoctorFixPlan(readyChecks({
+    wpsConfig: { ok: false, installed: true, debugEnabled: true },
+    wpsRuntime: { ok: true, installed: true, process: { checked: true, running: true } }
+  }));
+
+  assert.equal(plan.installWpsConfig, false);
+  assert.equal(plan.skipped.some((item) => item.code === 'wps-running'), true);
+});
 
 test('runDoctor reports missing production skills and WPS configuration without starting WPS', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'wps-reviewer-doctor-'));

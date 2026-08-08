@@ -248,7 +248,7 @@ async function registerDocumentSession({ store, documentRegistry, body, now, def
   });
   const document = documentRegistry.upsert({ ...normalized, connectionCode: binding.connectionCode });
   await store.registerSession({
-    docSessionId: document.documentHandle,
+    docSessionId: document.documentKey || document.documentHandle,
     docTitle: document.title,
     docFingerprint: document.revisionToken,
     client: 'wps-connector'
@@ -423,7 +423,8 @@ export async function createBridgeServer({
           ...runtimeIdentity,
           ...(servicePort ? { port: servicePort } : {}),
           sessions: store.listSessions().length,
-          suggestions: store.listSuggestions().length
+          suggestions: store.listSuggestions().length,
+          sessionCompaction: store.sessionCompaction
         });
         return;
       }

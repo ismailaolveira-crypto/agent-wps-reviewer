@@ -20,50 +20,37 @@
 
 - 先识别操作系统，只下载对应平台包；
 - 确认已安装 WPS Office、Node.js 20 或更高版本；
-- 确认 GitHub CLI `gh` 已登录，并且当前账号对私有仓库 `ismailaolveira-crypto/agent-wps-reviewer` 有读取权限；
-- 不索要、展示或复制仓库 Token；没有权限时停止并请用户添加 GitHub 协作者权限。
+- 仓库和 Beta Release 均公开可读，不要求 GitHub 登录，也不索要、展示或复制仓库 Token；
+- 下载后必须按 manifest 核对 SHA-256，校验失败立即停止。
 
 ## macOS
 
-下载最新预发布版中的 `*-macos.zip`，安装到用户目录中的版本化文件夹：
+下载公开 Release 中最新的 `*-macos.zip`，安装到用户目录中的版本化文件夹：
 
 ```bash
-gh auth status
-release_tag="$(gh release view --repo ismailaolveira-crypto/agent-wps-reviewer --json tagName --jq .tagName)"
-install_root="$HOME/Applications/Agent WPS Reviewer/$release_tag"
-mkdir -p "$install_root"
-gh release download "$release_tag" --repo ismailaolveira-crypto/agent-wps-reviewer --pattern '*-macos.zip' --dir "$install_root" --clobber
-gh release download "$release_tag" --repo ismailaolveira-crypto/agent-wps-reviewer --pattern '*-macos-manifest.json' --dir "$install_root" --clobber
-zip_file="$(find "$install_root" -maxdepth 1 -name '*-macos.zip' -print -quit)"
-manifest_file="$(find "$install_root" -maxdepth 1 -name '*-macos-manifest.json' -print -quit)"
-expected_hash="$(node -e 'const fs=require("fs"); console.log(JSON.parse(fs.readFileSync(process.argv[1],"utf8")).sha256)' "$manifest_file")"
-actual_hash="$(shasum -a 256 "$zip_file" | awk '{print $1}')"
-test "$actual_hash" = "$expected_hash" || { echo "SHA-256 校验失败"; exit 1; }
-unzip -o "$install_root"/*-macos.zip -d "$install_root"
+fetcher="$(mktemp /tmp/agent-wps-download.XXXXXX.mjs)"
+curl -fsSL https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/scripts/download-latest-release.mjs -o "$fetcher"
+result="$(node "$fetcher" --platform macos --dir "$HOME/Applications/Agent WPS Reviewer")"
+zip_file="$(printf '%s' "$result" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).zipPath))')"
+install_root="$(dirname "$zip_file")"
+unzip -o "$zip_file" -d "$install_root"
 cd "$install_root"
 bash setup.command
 npm run doctor
 ```
 
-只有 `npm run doctor` 返回 `ok: true`，并且 `mcpConfig.configured` 中包含 `workbuddy`，才算自动配置完成。
+只有 `npm run doctor` 返回 `ok: true`，并且 `checks.mcpConfig.configured` 中包含 `workbuddy`，才算自动配置完成。
 
 ## Windows
 
-在 PowerShell 中下载最新预发布版中的 `*-windows-x64.zip`：
+在 PowerShell 中下载公开 Release 中最新的 `*-windows-x64.zip`：
 
 ```powershell
-gh auth status
-$ReleaseTag = gh release view --repo ismailaolveira-crypto/agent-wps-reviewer --json tagName --jq .tagName
-$InstallRoot = Join-Path $env:LOCALAPPDATA "Agent WPS Reviewer\downloads\$ReleaseTag"
-New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
-gh release download $ReleaseTag --repo ismailaolveira-crypto/agent-wps-reviewer --pattern "*-windows-x64.zip" --dir $InstallRoot --clobber
-gh release download $ReleaseTag --repo ismailaolveira-crypto/agent-wps-reviewer --pattern "*-windows-x64-manifest.json" --dir $InstallRoot --clobber
-$Zip = Get-ChildItem $InstallRoot -Filter "*-windows-x64.zip" | Select-Object -First 1
-$ManifestFile = Get-ChildItem $InstallRoot -Filter "*-windows-x64-manifest.json" | Select-Object -First 1
-$ExpectedHash = (Get-Content $ManifestFile.FullName -Raw | ConvertFrom-Json).sha256
-$ActualHash = (Get-FileHash $Zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($ActualHash -ne $ExpectedHash.ToLowerInvariant()) { throw "SHA-256 校验失败" }
-Expand-Archive -Path $Zip.FullName -DestinationPath $InstallRoot -Force
+$Fetcher = Join-Path $env:TEMP "agent-wps-download.mjs"
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/scripts/download-latest-release.mjs" -OutFile $Fetcher
+$Info = (node $Fetcher --platform windows --dir (Join-Path $env:LOCALAPPDATA "Agent WPS Reviewer\downloads")) | ConvertFrom-Json
+$InstallRoot = Split-Path -Parent $Info.zipPath
+Expand-Archive -Path $Info.zipPath -DestinationPath $InstallRoot -Force
 Set-Location $InstallRoot
 cmd /c setup.cmd
 npm run doctor

@@ -64,6 +64,7 @@ export const REQUIRED_RELEASE_FILES = [
   'scripts/build-wps-publish.mjs',
   'scripts/build-platform-releases.mjs',
   'scripts/validate-platform-releases.mjs',
+  'scripts/download-latest-release.mjs',
   'bin/wps-reviewer-mcp.mjs',
   'bin/wps-suggest.mjs',
   'public/jsplugins.xml',

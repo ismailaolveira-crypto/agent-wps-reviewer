@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { test } from 'node:test';
+import { downloadLatestRelease, selectLatestRelease, selectPlatformAssets } from '../scripts/download-latest-release.mjs';
+
+test('release downloader selects the newest published release and platform assets', () => {
+  const selected = selectLatestRelease([
+    { tag_name: 'old', published_at: '2026-01-01T00:00:00Z', assets: [] },
+    { tag_name: 'draft', draft: true, published_at: '2026-03-01T00:00:00Z', assets: [] },
+    { tag_name: 'newer-without-macos', published_at: '2026-02-02T00:00:00Z', assets: [
+      { name: 'agent-wps-reviewer-0.2.1-windows-x64.zip' },
+      { name: 'agent-wps-reviewer-0.2.1-windows-x64-manifest.json' }
+    ] },
+    { tag_name: 'new', prerelease: true, published_at: '2026-02-01T00:00:00Z', assets: [
+      { name: 'agent-wps-reviewer-0.2.1-macos.zip' },
+      { name: 'agent-wps-reviewer-0.2.1-macos-manifest.json' }
+    ] }
+  ], 'macos');
+  assert.equal(selected.tag_name, 'new');
+  assert.equal(selectPlatformAssets(selected, 'macos').suffix, 'macos');
+});
+
+test('release downloader works without GitHub authentication and verifies SHA-256', async () => {
+  const outputDir = await mkdtemp(path.join(os.tmpdir(), 'wps-release-download-'));
+  const zipBytes = Buffer.from('verified release bytes');
+  const sha256 = createHash('sha256').update(zipBytes).digest('hex');
+  const release = {
+    tag_name: 'v0.2.1-beta.1',
+    published_at: '2026-08-08T00:00:00Z',
+    assets: [
+      { name: 'agent-wps-reviewer-0.2.1-macos.zip', browser_download_url: 'https://example.test/macos.zip' },
+      { name: 'agent-wps-reviewer-0.2.1-macos-manifest.json', browser_download_url: 'https://example.test/macos-manifest.json' }
+    ]
+  };
+  const manifest = {
+    platform: 'macos',
+    zip: 'agent-wps-reviewer-0.2.1-macos.zip',
+    sha256
+  };
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({ url, options });
+    if (url.includes('/releases?')) return new Response(JSON.stringify([release]));
+    if (url.endsWith('manifest.json')) return new Response(JSON.stringify(manifest));
+    return new Response(zipBytes);
+  };
+
+  try {
+    const result = await downloadLatestRelease({ platform: 'macos', outputDir, fetchImpl, token: '' });
+    assert.equal(result.ok, true);
+    assert.equal(result.sha256, sha256);
+    assert.deepEqual(await readFile(result.zipPath), zipBytes);
+    assert.equal(requests.some((request) => request.options.headers.authorization), false);
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});

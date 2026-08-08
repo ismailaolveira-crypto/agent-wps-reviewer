@@ -17,6 +17,84 @@ import { defaultJsaddonsDir } from '../wps/pluginConfig.mjs';
 import { platformSummary } from '../platform.mjs';
 
 const RELEASE_LOCK_STALE_MS = 10 * 60 * 1000;
+const CORE_READINESS_CHECKS = [
+  'skills',
+  'retiredSkills',
+  'agentToken',
+  'mcpConfig',
+  'bridge',
+  'mcp',
+  'documentation',
+  'releaseArtifact',
+  'launchAgent'
+];
+
+export function buildDoctorReadiness(checks = {}) {
+  const coreReady = CORE_READINESS_CHECKS.every((name) => checks[name]?.ok === true);
+  const wpsInstalled = checks.wpsRuntime?.installed === true;
+  const wpsReady = checks.wpsConfig?.ok === true;
+  const documentConnected = checks.wpsDocuments?.checked === true && checks.wpsDocuments?.count > 0;
+  const wpsRunning = checks.wpsRuntime?.process?.running === true;
+  let status = 'ready';
+
+  if (!coreReady) status = 'repair-required';
+  else if (!wpsInstalled) status = 'wps-required';
+  else if (!wpsReady && wpsRunning) status = 'maintenance-window-required';
+  else if (!wpsReady) status = 'wps-config-required';
+  else if (!documentConnected) status = 'ready-no-document';
+
+  const messages = {
+    ready: '产品已就绪，当前 WPS 文档可以进入 Agent 审阅流程。',
+    'ready-no-document': '产品已就绪；打开目标文章和 Agent 审阅侧栏后即可使用。',
+    'maintenance-window-required': '核心服务可用，但 WPS 配置需要在关闭 WPS 的维护窗口处理。',
+    'wps-config-required': '核心服务可用，但 WPS 加载项配置尚未就绪。',
+    'wps-required': '未检测到受支持的 WPS Office。',
+    'repair-required': '核心组件存在问题，请按 nextSteps 修复。'
+  };
+
+  return {
+    status,
+    message: messages[status],
+    usable: coreReady && wpsInstalled && wpsReady,
+    coreReady,
+    wpsInstalled,
+    wpsReady,
+    wpsRunning,
+    documentConnected
+  };
+}
+
+export function buildDoctorFixPlan(checks = {}) {
+  const wpsRunning = checks.wpsRuntime?.process?.running === true;
+  const pluginNeedsWrite = checks.wpsConfig?.installed !== true
+    || checks.wpsConfig?.debugEnabled === true
+    || checks.wpsConfig?.publishReady !== true;
+  const installWpsConfig = checks.wpsConfig?.ok !== true && pluginNeedsWrite && !wpsRunning;
+  const unmanagedBridge = checks.bridge?.running === true && checks.bridge?.managed !== true;
+  const skipped = [];
+
+  if (checks.wpsConfig?.ok !== true && pluginNeedsWrite && wpsRunning) {
+    skipped.push({
+      component: 'wps-config',
+      code: 'wps-running',
+      message: 'WPS 正在运行，已跳过加载项配置写入；请关闭 WPS 后再次运行 npm run doctor:fix。'
+    });
+  }
+  if (checks.bridge?.ok !== true && unmanagedBridge) {
+    skipped.push({
+      component: 'bridge',
+      code: 'unmanaged-listener',
+      message: '目标端口由非本产品进程占用，已跳过 bridge 启动。'
+    });
+  }
+
+  return {
+    installSkills: checks.skills?.ok !== true || checks.retiredSkills?.ok !== true,
+    installWpsConfig,
+    startBridge: checks.bridge?.ok !== true && !unmanagedBridge,
+    skipped
+  };
+}
 
 async function readProductManifest(manifestPath) {
   return JSON.parse(await readFile(manifestPath, 'utf8'));
@@ -457,8 +535,15 @@ export async function runDoctor({
   if (!checks.retiredSkills.ok) {
     nextSteps.push('检测到旧的顶层 whitepaper-wps-reviewer；运行 npm run install:skill 完成迁移并清理旧入口。');
   }
-  if (!checks.wpsConfig.ok) nextSteps.push('运行 npm run setup，安装 WPS 运行配置并启动 bridge。');
-  if (checks.wpsConfig.debugEnabled) nextSteps.push('检测到 WPS 开发调试属性；关闭 WPS 后运行 npm run wps:install，重新生成不带 debug/enable_dev 的生产配置。');
+  const wpsConfigHasSpecificAction = checks.wpsConfig.debugEnabled
+    || checks.wpsConfig.auth?.disabled
+    || checks.wpsConfig.trustPending
+    || checks.wpsConfig.auth?.valid === false
+    || checks.wpsConfig.blockedByFile;
+  if (!checks.wpsConfig.ok && !wpsConfigHasSpecificAction) {
+    nextSteps.push('WPS 加载项配置尚未就绪；关闭 WPS 后运行 npm run doctor:fix，或重新运行 npm run setup。');
+  }
+  if (checks.wpsConfig.debugEnabled) nextSteps.push('检测到 WPS 开发调试属性；关闭 WPS 后运行 npm run doctor:fix，重新生成不带 debug/enable_dev 的生产配置。');
   if (checks.wpsConfig.auth?.disabled) nextSteps.push(platform === 'win32'
     ? 'WPS 已禁用 Agent 审阅加载项；不要直接改 authaddin.json，请重新完成 WPS 官方 publish/trust 安装。'
     : 'WPS 已禁用 Agent 审阅加载项；运行 npm run wps:authorize 后，在允许的窗口重启 WPS。');
@@ -496,10 +581,13 @@ export async function runDoctor({
     }
   }
 
-  return {
-    ok: Object.entries(checks)
+  const ok = Object.entries(checks)
       .filter(([name]) => !['wpsRuntime', 'wpsDocuments'].includes(name))
-      .every(([, check]) => check.ok),
+      .every(([, check]) => check.ok);
+
+  return {
+    ok,
+    readiness: buildDoctorReadiness(checks),
     checks,
     nextSteps
   };

@@ -1,6 +1,6 @@
 # Agent WPS Reviewer
 
-Agent WPS Reviewer 是一个本机白皮书审稿助手。当前发布通道是内部 Beta：WPS 批注模式可供验收；Word 修订和 PDF 复刻暂未发布。未通过真实 WPS 和新手无协助门禁前，不宣称生产完成，也不升级到 1.0。
+Agent WPS Reviewer 是一个本机白皮书审稿助手。当前发布通道是公开 Beta：WPS 批注模式可供验收；Word 修订和 PDF 复刻暂未发布。未通过真实 WPS 和新手无协助门禁前，不宣称生产完成，也不升级到 1.0。
 
 它把 Codex、Claude Code、WorkBuddy 或其他本机 agent 的审稿意见投递到 WPS 侧边栏里。用户可以逐条定位正文、拒绝建议，或在 WPS 中接受后生成真实批注；正文不会被替换。
 
@@ -20,7 +20,7 @@ Agent / CLI
 
 ## 从 GitHub 获取
 
-当前版本通过私有 GitHub 仓库交付。获得仓库权限后可以克隆源码：
+当前版本通过公开 GitHub 仓库交付，不需要仓库协作者权限即可克隆源码：
 
 ```bash
 git clone https://github.com/ismailaolveira-crypto/agent-wps-reviewer.git
@@ -34,7 +34,9 @@ Windows 使用 PowerShell 或 CMD 进入目录后运行：
 setup.cmd
 ```
 
-也可以从 GitHub Releases 下载 `agent-wps-reviewer-0.2.0.zip`，解压后按系统运行根目录的 `setup.command`（macOS）或 `setup.cmd`（Windows）。发布 ZIP 同时包含 WPS 插件、bridge、MCP server、用户入口 Skill 和内部执行 Skill，不需要从其他仓库补文件。
+也可以从 [GitHub Releases](https://github.com/ismailaolveira-crypto/agent-wps-reviewer/releases) 下载最新的 `*-macos.zip` 或 `*-windows-x64.zip`，解压后按系统运行根目录的 `setup.command`（macOS）或 `setup.cmd`（Windows）。发布 ZIP 同时包含 WPS 插件、bridge、MCP server、用户入口 Skill 和内部执行 Skill，不需要从其他仓库补文件。
+
+Agent 或维护脚本需要自动下载最新平台包时，可以运行 `npm run download:latest -- --platform macos` 或 `npm run download:latest -- --platform windows`。下载器使用公开 GitHub API，不要求登录，并会按 manifest 校验 ZIP 的 SHA-256。
 
 安装完成后新开一个 Agent 会话，直接说“使用 `whitepaper-chief-editor` 审查当前 WPS 文章”。安装器会把用户入口 Skill 和 `agent-wps-reviewer` MCP 条目写入已检测到的 Codex/Claude Code 配置；`npm run doctor` 用于确认两者均可用。
 

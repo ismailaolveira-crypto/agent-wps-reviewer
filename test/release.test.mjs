@@ -112,6 +112,19 @@ test('README exposes one novice installation route and hides component installer
   assert.match(readme, /setup\.command/);
   assert.match(readme, /npm run setup/);
   assert.doesNotMatch(readme, /npm run (mcp:install|wps:install|install:skill|install:local)/u);
+  assert.doesNotMatch(readme, /私有 GitHub|私有仓库/u);
+});
+
+test('public distribution docs do not require repository authentication', async () => {
+  for (const file of ['WORKBUDDY_SETUP.md', 'docs/MACOS_QUICKSTART.md', 'docs/WINDOWS_QUICKSTART.md']) {
+    const content = await readFile(path.resolve(file), 'utf8');
+    assert.doesNotMatch(content, /私有 GitHub|私有仓库读取权限|gh auth status/u, file);
+  }
+});
+
+test('CI validates platform-specific release packages', async () => {
+  const workflow = await readFile(path.resolve('.github/workflows/ci.yml'), 'utf8');
+  assert.match(workflow, /npm run validate:platform-releases/u);
 });
 
 test('release explicitly includes the product manifest, doctor, MCP health check, release installer, skill uninstall, and GitHub preflight', () => {

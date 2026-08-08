@@ -27,6 +27,7 @@ function textField(value, fallback = '') {
 }
 
 const CONNECTION_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const MAX_TRANSIENT_WPS_SESSIONS = 200;
 
 function normalizeConnectionCode(value) {
   return String(value || '').trim().toUpperCase();
@@ -103,6 +104,7 @@ export class ReviewStore extends EventEmitter {
     this.suggestions = new Map();
     this.documentBindings = new Map();
     this.acceptanceEvents = [];
+    this.sessionCompaction = { removed: 0, kept: 0 };
   }
 
   async load() {
@@ -115,9 +117,53 @@ export class ReviewStore extends EventEmitter {
       this.suggestions = new Map((parsed.suggestions ?? []).map((item) => [item.id, item]));
       this.documentBindings = new Map((parsed.documentBindings ?? []).map((item) => [item.documentKey, item]));
       this.acceptanceEvents = Array.isArray(parsed.acceptanceEvents) ? parsed.acceptanceEvents : [];
+      this.compactSessions();
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
+  }
+
+  compactSessions({ maxTransientSessions = MAX_TRANSIENT_WPS_SESSIONS } = {}) {
+    const protectedIds = new Set();
+    for (const suggestion of this.suggestions.values()) {
+      const metadata = suggestion.metadata || {};
+      for (const value of [
+        suggestion.docSessionId,
+        metadata.documentHandle,
+        ...(Array.isArray(metadata.previousDocumentHandles) ? metadata.previousDocumentHandles : [])
+      ]) {
+        const id = textField(value);
+        if (id) protectedIds.add(id);
+      }
+    }
+
+    const sessions = [...this.sessions.values()].sort((left, right) =>
+      textField(right.updatedAt).localeCompare(textField(left.updatedAt))
+    );
+    const kept = [];
+    const transientTitles = new Set();
+    let transientCount = 0;
+
+    for (const session of sessions) {
+      const id = textField(session.docSessionId);
+      const client = textField(session.client);
+      const logicalSession = id.startsWith('path:') || id.startsWith('session:');
+      if (protectedIds.has(id) || client !== 'wps-connector' || logicalSession) {
+        kept.push(session);
+        continue;
+      }
+
+      const titleKey = textField(session.docTitle, 'WPS Document').toLowerCase();
+      if (transientCount >= maxTransientSessions || transientTitles.has(titleKey)) continue;
+      transientTitles.add(titleKey);
+      transientCount += 1;
+      kept.push(session);
+    }
+
+    const removed = Math.max(0, this.sessions.size - kept.length);
+    this.sessions = new Map(kept.map((item) => [item.docSessionId, item]));
+    this.sessionCompaction = { removed, kept: kept.length };
+    return this.sessionCompaction;
   }
 
   async save() {
@@ -151,6 +197,7 @@ export class ReviewStore extends EventEmitter {
     };
 
     this.sessions.set(docSessionId, session);
+    this.compactSessions();
     await this.save();
     this.emit('session', session);
     return session;

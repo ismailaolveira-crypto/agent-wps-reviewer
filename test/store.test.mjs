@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -33,6 +33,41 @@ test('ReviewStore registers sessions and persists suggestions', async () => {
     const nextStore = new ReviewStore({ dataDir });
     await nextStore.load();
     assert.equal(nextStore.listSuggestions({ docSessionId: 'doc-1' }).length, 1);
+  } finally {
+    await rm(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('ReviewStore compacts transient WPS runtime sessions while preserving referenced history', async () => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), 'wps-review-store-compact-'));
+  try {
+    await writeFile(path.join(dataDir, 'review-store.json'), JSON.stringify({
+      sessions: [
+        { docSessionId: 'referenced-old-handle', docTitle: 'A.docx', client: 'wps-connector', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { docSessionId: 'transient-a-old', docTitle: 'A.docx', client: 'wps-connector', updatedAt: '2026-02-01T00:00:00.000Z' },
+        { docSessionId: 'transient-a-new', docTitle: 'A.docx', client: 'wps-connector', updatedAt: '2026-03-01T00:00:00.000Z' },
+        { docSessionId: 'path:/docs/b.docx', docTitle: 'B.docx', client: 'wps-connector', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { docSessionId: 'mock-session', docTitle: 'Mock', client: 'mock', updatedAt: '2026-01-01T00:00:00.000Z' }
+      ],
+      suggestions: [{
+        id: 'sug-protected',
+        docSessionId: 'referenced-old-handle',
+        metadata: { previousDocumentHandles: ['previous-protected-handle'] }
+      }],
+      documentBindings: [],
+      acceptanceEvents: []
+    }));
+
+    const store = new ReviewStore({ dataDir });
+    await store.load();
+    const ids = store.listSessions().map((item) => item.docSessionId);
+
+    assert.ok(ids.includes('referenced-old-handle'));
+    assert.ok(ids.includes('transient-a-new'));
+    assert.ok(ids.includes('path:/docs/b.docx'));
+    assert.ok(ids.includes('mock-session'));
+    assert.equal(ids.includes('transient-a-old'), false);
+    assert.equal(store.sessionCompaction.removed, 1);
   } finally {
     await rm(dataDir, { recursive: true, force: true });
   }

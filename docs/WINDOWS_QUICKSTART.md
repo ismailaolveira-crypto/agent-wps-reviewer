@@ -6,7 +6,7 @@
 2. `setup.cmd`：唯一安装入口；
 3. `WORKBUDDY_SETUP.md`：交给 WorkBuddy 执行的完整说明。
 
-前置条件：Windows 10/11 x64、WPS Office、Node.js 20+，以及私有 GitHub 仓库读取权限。
+前置条件：Windows 10/11 x64、WPS Office 和 Node.js 20+。仓库与 Beta Release 均可公开读取，不需要 GitHub 登录。
 
 安装：
 

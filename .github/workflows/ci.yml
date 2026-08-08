@@ -42,6 +42,9 @@ jobs:
       - name: Verify clean release installation
         run: npm run validate:release-install
 
+      - name: Validate platform-specific release packages
+        run: npm run validate:platform-releases
+
       - name: Verify release manifest
         run: |
           node --input-type=module <<'NODE'

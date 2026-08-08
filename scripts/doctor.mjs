@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { installPluginConfig } from '../src/wps/pluginConfig.mjs';
 import { installProductionSkills } from '../src/install/skillInstall.mjs';
-import { runDoctor } from '../src/install/doctor.mjs';
+import { buildDoctorFixPlan, runDoctor } from '../src/install/doctor.mjs';
 import { startBridge } from '../src/bridge/processControl.mjs';
 
 function parseArgs(argv) {
@@ -65,16 +65,7 @@ const bridgeOptions = {
   ...(args.logFile ? { logFile: args.logFile } : {})
 };
 const changes = [];
-
-if (args.fix) {
-  changes.push(await installProductionSkills({
-    ...(skillRoots ? { targetRoots: skillRoots } : {})
-  }));
-  changes.push(await installPluginConfig({ jsaddonsDir: args.jsaddonsDir }));
-  changes.push(await startBridge(bridgeOptions));
-}
-
-const result = await runDoctor({
+const doctorOptions = {
   ...(skillRoots ? { skillRoots } : {}),
   jsaddonsDir: args.jsaddonsDir,
   bridgeOptions,
@@ -82,6 +73,25 @@ const result = await runDoctor({
   checkWpsProcess: args.checkWpsProcess !== false,
   checkLaunchAgent: true,
   launchAgentPath: args.launchAgentPath
-});
+};
+
+if (args.fix) {
+  const before = await runDoctor(doctorOptions);
+  const fixPlan = buildDoctorFixPlan(before.checks);
+  if (fixPlan.installSkills) {
+    changes.push({ component: 'skills', ...(await installProductionSkills({
+      ...(skillRoots ? { targetRoots: skillRoots } : {})
+    })) });
+  }
+  if (fixPlan.installWpsConfig) {
+    changes.push({ component: 'wps-config', ...(await installPluginConfig({ jsaddonsDir: args.jsaddonsDir })) });
+  }
+  if (fixPlan.startBridge) {
+    changes.push({ component: 'bridge', ...(await startBridge(bridgeOptions)) });
+  }
+  changes.push(...fixPlan.skipped.map((item) => ({ ...item, skipped: true })));
+}
+
+const result = await runDoctor(doctorOptions);
 console.log(JSON.stringify({ ...result, changes }, null, 2));
 if (!result.ok) process.exitCode = 1;
