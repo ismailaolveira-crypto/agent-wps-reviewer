@@ -41,19 +41,29 @@ test('release downloader works without GitHub authentication and verifies SHA-25
     sha256
   };
   const requests = [];
+  let zipAttempts = 0;
   const fetchImpl = async (url, options) => {
     requests.push({ url, options });
     if (url.includes('/releases?')) return new Response(JSON.stringify([release]));
     if (url.endsWith('manifest.json')) return new Response(JSON.stringify(manifest));
+    zipAttempts += 1;
+    if (zipAttempts === 1) throw new Error('temporary network failure');
     return new Response(zipBytes);
   };
 
   try {
-    const result = await downloadLatestRelease({ platform: 'macos', outputDir, fetchImpl, token: '' });
+    const result = await downloadLatestRelease({
+      platform: 'macos',
+      outputDir,
+      fetchImpl,
+      token: '',
+      retryDelayMs: 0
+    });
     assert.equal(result.ok, true);
     assert.equal(result.sha256, sha256);
     assert.deepEqual(await readFile(result.zipPath), zipBytes);
     assert.equal(requests.some((request) => request.options.headers.authorization), false);
+    assert.equal(zipAttempts, 2);
   } finally {
     await rm(outputDir, { recursive: true, force: true });
   }

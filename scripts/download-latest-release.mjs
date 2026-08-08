@@ -47,37 +47,68 @@ async function fetchOrThrow(fetchImpl, url, headers) {
   return response;
 }
 
+async function fetchBody(fetchImpl, url, headers, read, { attempts = 3, retryDelayMs = 500 } = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await read(await fetchOrThrow(fetchImpl, url, headers));
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts && retryDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs * (2 ** (attempt - 1))));
+      }
+    }
+  }
+  throw new Error(`Download failed after ${attempts} attempts: ${url}: ${lastError?.message || 'unknown error'}`, {
+    cause: lastError
+  });
+}
+
 export async function downloadLatestRelease({
   platform = process.platform === 'win32' ? 'windows' : 'macos',
   outputDir = path.resolve('downloads'),
   repository = DEFAULT_REPOSITORY,
   token = process.env.GITHUB_TOKEN || '',
-  fetchImpl = fetch
+  fetchImpl = fetch,
+  retryAttempts = 3,
+  retryDelayMs = 500
 } = {}) {
   const headers = {
     accept: 'application/vnd.github+json',
     'user-agent': 'agent-wps-reviewer-release-downloader',
     ...(token ? { authorization: `Bearer ${token}` } : {})
   };
-  const releasesResponse = await fetchOrThrow(
+  const releases = await fetchBody(
     fetchImpl,
     `https://api.github.com/repos/${repository}/releases?per_page=20`,
-    headers
+    headers,
+    (response) => response.json(),
+    { attempts: retryAttempts, retryDelayMs }
   );
-  const release = selectLatestRelease(await releasesResponse.json(), platform);
+  const release = selectLatestRelease(releases, platform);
   if (!release) throw new Error(`No published GitHub release with ${platform} assets was found`);
   const assets = selectPlatformAssets(release, platform);
   const releaseDir = path.resolve(outputDir, release.tag_name);
   await mkdir(releaseDir, { recursive: true });
 
-  const manifestResponse = await fetchOrThrow(fetchImpl, assets.manifest.browser_download_url, headers);
-  const manifestText = await manifestResponse.text();
+  const manifestText = await fetchBody(
+    fetchImpl,
+    assets.manifest.browser_download_url,
+    headers,
+    (response) => response.text(),
+    { attempts: retryAttempts, retryDelayMs }
+  );
   const manifest = JSON.parse(manifestText);
   if (manifest.platform !== platform) throw new Error(`Manifest platform mismatch: expected ${platform}`);
   if (manifest.zip !== assets.zip.name) throw new Error('Manifest ZIP name does not match the selected asset');
 
-  const zipResponse = await fetchOrThrow(fetchImpl, assets.zip.browser_download_url, headers);
-  const zipBytes = Buffer.from(await zipResponse.arrayBuffer());
+  const zipBytes = Buffer.from(await fetchBody(
+    fetchImpl,
+    assets.zip.browser_download_url,
+    headers,
+    (response) => response.arrayBuffer(),
+    { attempts: retryAttempts, retryDelayMs }
+  ));
   const actualHash = createHash('sha256').update(zipBytes).digest('hex');
   if (actualHash !== String(manifest.sha256 || '').toLowerCase()) {
     throw new Error(`SHA-256 mismatch: expected ${manifest.sha256}, received ${actualHash}`);
