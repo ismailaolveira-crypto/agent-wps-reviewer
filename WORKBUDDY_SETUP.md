@@ -28,7 +28,7 @@
 优先使用仓库的一键入口，它会下载、校验、解压并运行统一安装器：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.command -o /tmp/agent-wps-install.command
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/ismailaolveira-crypto/agent-wps-reviewer/contents/install-from-github.command?ref=main' -o /tmp/agent-wps-install.command
 bash /tmp/agent-wps-install.command
 ```
 
@@ -40,7 +40,8 @@ bash /tmp/agent-wps-install.command
 
 ```powershell
 $Installer = Join-Path $env:TEMP "agent-wps-install.ps1"
-Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.ps1" -OutFile $Installer
+$Headers = @{ Accept = "application/vnd.github.raw+json"; "User-Agent" = "agent-wps-reviewer-bootstrap" }
+Invoke-WebRequest -UseBasicParsing -Headers $Headers -Uri "https://api.github.com/repos/ismailaolveira-crypto/agent-wps-reviewer/contents/install-from-github.ps1?ref=main" -OutFile $Installer
 powershell -ExecutionPolicy Bypass -File $Installer
 ```
 

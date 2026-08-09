@@ -26,13 +26,13 @@ Agent WPS Reviewer 是一个本机白皮书审稿助手。当前发布通道是�
 macOS 在终端复制一行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.command -o /tmp/agent-wps-install.command && bash /tmp/agent-wps-install.command
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/ismailaolveira-crypto/agent-wps-reviewer/contents/install-from-github.command?ref=main' -o /tmp/agent-wps-install.command && bash /tmp/agent-wps-install.command
 ```
 
 Windows 在 PowerShell 复制一行：
 
 ```powershell
-$p="$env:TEMP\agent-wps-install.ps1"; Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.ps1 -OutFile $p; powershell -ExecutionPolicy Bypass -File $p
+$p="$env:TEMP\agent-wps-install.ps1"; $h=@{Accept="application/vnd.github.raw+json";"User-Agent"="agent-wps-reviewer-bootstrap"}; Invoke-WebRequest -UseBasicParsing -Headers $h 'https://api.github.com/repos/ismailaolveira-crypto/agent-wps-reviewer/contents/install-from-github.ps1?ref=main' -OutFile $p; powershell -ExecutionPolicy Bypass -File $p
 ```
 
 安装后打开 WPS 的“Agent 审阅”，新开 Agent 会话并说：`使用 whitepaper-chief-editor 审查当前 WPS 文章`。安装器只配置本机已经存在的 Agent CLI；未安装的 Agent 会明确标记为跳过。
