@@ -94,11 +94,14 @@ export async function downloadLatestRelease({
   const assets = selectPlatformAssets(release, platform);
   const releaseDir = path.resolve(outputDir, release.tag_name);
   await mkdir(releaseDir, { recursive: true });
+  const assetHeaders = { ...headers, accept: 'application/octet-stream' };
+  const manifestUrl = assets.manifest.url || assets.manifest.browser_download_url;
+  const zipUrl = assets.zip.url || assets.zip.browser_download_url;
 
   const manifestText = await fetchBody(
     fetchImpl,
-    assets.manifest.browser_download_url,
-    headers,
+    manifestUrl,
+    assetHeaders,
     (response) => response.text(),
     { attempts: retryAttempts, retryDelayMs }
   );
@@ -108,8 +111,8 @@ export async function downloadLatestRelease({
 
   const zipBytes = Buffer.from(await fetchBody(
     fetchImpl,
-    assets.zip.browser_download_url,
-    headers,
+    zipUrl,
+    assetHeaders,
     (response) => response.arrayBuffer(),
     { attempts: retryAttempts, retryDelayMs }
   ));

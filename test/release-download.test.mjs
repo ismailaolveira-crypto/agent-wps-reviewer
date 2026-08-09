@@ -35,8 +35,8 @@ test('release downloader works without GitHub authentication and verifies SHA-25
     tag_name: 'v0.2.1-beta.1',
     published_at: '2026-08-08T00:00:00Z',
     assets: [
-      { name: 'agent-wps-reviewer-0.2.1-macos.zip', browser_download_url: 'https://example.test/macos.zip' },
-      { name: 'agent-wps-reviewer-0.2.1-macos-manifest.json', browser_download_url: 'https://example.test/macos-manifest.json' }
+      { name: 'agent-wps-reviewer-0.2.1-macos.zip', url: 'https://api.example.test/assets/zip', browser_download_url: 'https://example.test/macos.zip' },
+      { name: 'agent-wps-reviewer-0.2.1-macos-manifest.json', url: 'https://api.example.test/assets/manifest', browser_download_url: 'https://example.test/macos-manifest.json' }
     ]
   };
   const manifest = {
@@ -49,7 +49,7 @@ test('release downloader works without GitHub authentication and verifies SHA-25
   const fetchImpl = async (url, options) => {
     requests.push({ url, options });
     if (url.includes('/releases?')) return new Response(JSON.stringify([release]));
-    if (url.endsWith('manifest.json')) return new Response(JSON.stringify(manifest));
+    if (url.endsWith('/manifest')) return new Response(JSON.stringify(manifest));
     zipAttempts += 1;
     if (zipAttempts === 1) throw new Error('temporary network failure');
     return new Response(zipBytes);
@@ -67,6 +67,8 @@ test('release downloader works without GitHub authentication and verifies SHA-25
     assert.equal(result.sha256, sha256);
     assert.deepEqual(await readFile(result.zipPath), zipBytes);
     assert.equal(requests.some((request) => request.options.headers.authorization), false);
+    assert.equal(requests.some((request) => request.url.startsWith('https://github.com/')), false);
+    assert.equal(requests.filter((request) => request.url.includes('/assets/')).every((request) => request.options.headers.accept === 'application/octet-stream'), true);
     assert.equal(zipAttempts, 2);
   } finally {
     await rm(outputDir, { recursive: true, force: true });
