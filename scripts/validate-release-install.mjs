@@ -97,6 +97,7 @@ async function inspectInstalledSkillBundle({ userFacingSkillPath, internalExecut
     path.join(userFacingSkillPath, 'references', 'capability-manifest.json'),
     'utf8'
   ));
+  const agentMetadata = await readFile(path.join(userFacingSkillPath, 'agents', 'openai.yaml'), 'utf8');
   const executorText = await readFile(internalExecutorPath, 'utf8');
   const profilePaths = [
     path.join(userFacingSkillPath, 'references', 'profiles', 'generic-whitepaper', 'profile.json'),
@@ -108,6 +109,8 @@ async function inspectInstalledSkillBundle({ userFacingSkillPath, internalExecut
   const checks = {
     dispatcherFrontmatter: /^---\nname: whitepaper-chief-editor\n/m.test(dispatcherText),
     dispatcherReferencesExecutor: dispatcherText.includes('whitepaper-wps-reviewer'),
+    dispatcherAgentMetadata: /display_name:\s*["']?白皮书审稿总编/u.test(agentMetadata) &&
+      /allow_implicit_invocation:\s*true/u.test(agentMetadata),
     capabilityManifest: capability?.capabilities?.['wps-comment']?.status === 'production',
     disabledWord: capability?.capabilities?.['docx-redline']?.status === 'disabled',
     disabledPdf: capability?.capabilities?.['pdf-replica']?.status === 'disabled',

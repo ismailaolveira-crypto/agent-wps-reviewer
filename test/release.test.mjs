@@ -68,6 +68,7 @@ test('concurrent release builds serialize and leave a matching manifest', async 
 test('release explicitly includes the bundled review skill and formal schemas', () => {
   for (const file of [
     'skills/whitepaper-chief-editor/SKILL.md',
+    'skills/whitepaper-chief-editor/agents/openai.yaml',
     'skills/whitepaper-chief-editor/references/capability-manifest.json',
     'skills/whitepaper-wps-reviewer/SKILL.md',
     'skills/whitepaper-wps-reviewer/references/review-purpose.md',
@@ -85,10 +86,14 @@ test('release explicitly includes the bundled review skill and formal schemas', 
 test('release includes WorkBuddy and platform delivery entry points', () => {
   for (const file of [
     'WORKBUDDY_SETUP.md',
+    'COLLEAGUE_DELIVERY.md',
+    'install-from-github.command',
+    'install-from-github.ps1',
     'docs/MACOS_QUICKSTART.md',
     'docs/WINDOWS_QUICKSTART.md',
     'docs/DATA_ALIGNMENT_INTERFACE.md',
     'scripts/build-platform-releases.mjs',
+    'scripts/build-colleague-delivery.mjs',
     'scripts/validate-platform-releases.mjs'
   ]) assert.ok(REQUIRED_RELEASE_FILES.includes(file), `${file} must be explicitly required`);
 });
@@ -229,6 +234,7 @@ test('release file collection excludes runtime artifacts', async () => {
   const files = await collectReleaseFiles();
   assert.equal(files.some((file) => file.startsWith('data/')), false);
   assert.equal(files.some((file) => file.startsWith('output/')), false);
+  assert.equal(files.some((file) => file.startsWith('.ai-change/')), false);
   assert.equal(files.some((file) => file.startsWith('.playwright-cli/')), false);
   assert.equal(files.some((file) => file.startsWith('docs/superpowers/')), false);
   assert.equal(files.includes('docs/2026-07-14-production-skill-suite-refactor-execution.md'), false);

@@ -9,6 +9,7 @@ import { collectReleaseFiles, validateReleaseMetadata } from './build-release.mj
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPRODUCIBLE_MTIME = new Date('2020-01-01T00:00:00.000Z');
+const REPOSITORY_BOOTSTRAPS = new Set(['install-from-github.command', 'install-from-github.ps1']);
 
 const PLATFORM_DEFINITIONS = {
   macos: {
@@ -27,9 +28,9 @@ const PLATFORM_DEFINITIONS = {
   }
 };
 
-function startHere({ platform, installer }) {
-  const run = platform === 'macos' ? 'bash setup.command' : 'setup.cmd';
-  return `# 开始使用\n\n这是 Agent WPS Reviewer ${platform === 'macos' ? 'macOS' : 'Windows x64'} 同事版。\n\n1. 确认已安装 WPS Office 和 Node.js 20+。\n2. 运行唯一安装入口：\`${run}\`。\n3. 安装完成后运行：\`npm run doctor\`。\n4. WorkBuddy 自助配置请读取：\`WORKBUDDY_SETUP.md\`。\n\n本包的安装入口是 \`${installer}\`。当前只发布 WPS 批注与数据对齐接口，不会自动替换正文。\n`;
+function startHere({ platform, installer, version }) {
+  const run = platform === 'macos' ? '双击 `setup.command`（或在终端运行 `bash setup.command`）' : '双击 `setup.cmd`';
+  return `# 开始使用\n\n这是 Agent WPS Reviewer ${version} ${platform === 'macos' ? 'macOS' : 'Windows x64'} 同事版。\n\n## 安装\n\n1. 确认已安装 WPS Office 和 Node.js 20+。\n2. ${run}。这是唯一安装入口。\n3. 安装结果会自动运行 doctor；只有 doctor 的 \`ok\` 为 \`true\`，后台安装才完成。\n4. 安装完成后再打开 WPS；若看不到“Agent 审阅”，只在允许的窗口重启 WPS。\n5. 新开一个 Agent 会话，说：“使用 whitepaper-chief-editor 审查当前 WPS 文章”。\n\n普通同事不需要分别安装 Skill、WPS 插件、Bridge 或 MCP。本包的入口是 \`${installer}\`；WorkBuddy 自助配置见 \`WORKBUDDY_SETUP.md\`。\n\n## 当前边界\n\n当前只发布经过人工确认的 WPS 批注流程，不会自动替换正文。Word 红线、PDF/InDesign 复刻仍未发布。真实 WPS 定位和批注需要在打开的文档中完成一次验收。\n`;
 }
 
 async function digest(filePath) {
@@ -68,7 +69,9 @@ export async function buildPlatformRelease(platform) {
   const releaseMetadata = validateReleaseMetadata(productManifest);
   if (!releaseMetadata.ok) throw new Error(`Invalid release metadata: ${releaseMetadata.errors.join('; ')}`);
 
-  const sourceFiles = (await collectReleaseFiles()).filter((file) => file !== definition.excludedRootInstaller);
+  const sourceFiles = (await collectReleaseFiles()).filter((file) =>
+    file !== definition.excludedRootInstaller && !REPOSITORY_BOOTSTRAPS.has(file)
+  );
   const platformConfig = {
     schemaVersion: 1,
     product: pkg.name,
@@ -78,6 +81,8 @@ export async function buildPlatformRelease(platform) {
     installer: definition.installer,
     quickstart: definition.quickstart,
     workbuddyGuide: 'WORKBUDDY_SETUP.md',
+    userFacingSkill: productManifest.userFacingSkill,
+    wpsPlugin: 'WpsAgentReviewer',
     mcpServerName: 'agent-wps-reviewer',
     capabilities: ['wps-comment', 'document-selection', 'data-evidence-alignment'],
     disabledCapabilities: ['docx-redline', 'pdf-replica'],
@@ -86,7 +91,7 @@ export async function buildPlatformRelease(platform) {
   const generatedFiles = ['START_HERE.md', 'platform-config.json'];
   const archiveFiles = [...sourceFiles, ...generatedFiles].sort();
   const extras = {
-    'START_HERE.md': startHere({ platform, installer: definition.installer }),
+    'START_HERE.md': startHere({ platform, installer: definition.installer, version: pkg.version }),
     'platform-config.json': `${JSON.stringify(platformConfig, null, 2)}\n`
   };
 

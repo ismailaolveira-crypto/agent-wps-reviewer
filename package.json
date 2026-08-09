@@ -1,6 +1,6 @@
 {
   "name": "agent-wps-reviewer",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "description": "Local bridge and WPS taskpane for agent-submitted document review suggestions.",
@@ -66,6 +66,7 @@
     "acceptance:audit": "node scripts/acceptance-audit.mjs",
     "release": "node scripts/build-release.mjs",
     "release:platforms": "node scripts/build-platform-releases.mjs",
+    "release:colleague": "node scripts/build-colleague-delivery.mjs",
     "validate:platform-releases": "node scripts/validate-platform-releases.mjs",
     "download:latest": "node scripts/download-latest-release.mjs"
   },

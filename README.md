@@ -6,6 +6,37 @@ Agent WPS Reviewer 是一个本机白皮书审稿助手。当前发布通道是�
 
 给同事分发时使用 GitHub Release 中独立的 macOS 或 Windows 包。让 WorkBuddy 自行下载和配置时，只需把仓库根目录的 `WORKBUDDY_SETUP.md` 链接交给它。
 
+维护人员生成同事交付包只运行 `npm run release:colleague`。交付清单见 `COLLEAGUE_DELIVERY.md`；命令会同时生成 macOS、Windows x64 包及带 SHA-256 的总索引，并验证包内 Skill、WPS 插件、Bridge、MCP 与唯一安装入口。
+
+## 能做什么
+
+- Agent 分小节读取当前 WPS 白皮书，给出 3–7 条候选意见；
+- 用户选择后重新核对上下文和反证，再投递到 WPS 侧边栏；
+- 在 WPS 中定位原文，用户点击“接受”后创建原生批注，不替换正文；
+- 根据已核验数据、历史白皮书风格证据和修改目的约束审稿意见；
+- 自动安装 `whitepaper-chief-editor` Skill，并配置本机检测到的 Codex、Claude Code、WorkBuddy MCP 连接；
+- 提供安装诊断、版本哈希、回滚和卸载。
+
+当前不能自动生成正式 Word 红线稿，也不能承诺 PDF/InDesign 一比一成品复刻。没有用户确认时不会写入批注；没有真实 WPS 事件时不会声称已经生成批注。
+
+## 同事一键下载安装
+
+前置条件只有 WPS Office 和 Node.js 20+。脚本会从 GitHub Release 选择当前系统包、核对 SHA-256、解压、安装 Skill/WPS 插件/Bridge，并配置已检测到的 Agent。
+
+macOS 在终端复制一行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.command -o /tmp/agent-wps-install.command && bash /tmp/agent-wps-install.command
+```
+
+Windows 在 PowerShell 复制一行：
+
+```powershell
+$p="$env:TEMP\agent-wps-install.ps1"; Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.ps1 -OutFile $p; powershell -ExecutionPolicy Bypass -File $p
+```
+
+安装后打开 WPS 的“Agent 审阅”，新开 Agent 会话并说：`使用 whitepaper-chief-editor 审查当前 WPS 文章`。安装器只配置本机已经存在的 Agent CLI；未安装的 Agent 会明确标记为跳过。
+
 ## 形态
 
 ```text

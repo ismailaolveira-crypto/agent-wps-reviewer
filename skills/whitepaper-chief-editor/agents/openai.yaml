@@ -1,0 +1,7 @@
+interface:
+  display_name: "白皮书审稿总编"
+  short_description: "分小节审稿，把人工确认后的意见投递到 WPS 并生成原生批注"
+  default_prompt: "Use $whitepaper-chief-editor to review one section at a time, show 3-7 numbered candidates, wait for selection, recheck context, preview final comments, and only then submit them to the WPS side pane for human acceptance."
+
+policy:
+  allow_implicit_invocation: true

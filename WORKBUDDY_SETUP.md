@@ -25,35 +25,23 @@
 
 ## macOS
 
-下载公开 Release 中最新的 `*-macos.zip`，安装到用户目录中的版本化文件夹：
+优先使用仓库的一键入口，它会下载、校验、解压并运行统一安装器：
 
 ```bash
-fetcher="$(mktemp /tmp/agent-wps-download.XXXXXX.mjs)"
-curl -fsSL https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/scripts/download-latest-release.mjs -o "$fetcher"
-result="$(node "$fetcher" --platform macos --dir "$HOME/Applications/Agent WPS Reviewer")"
-zip_file="$(printf '%s' "$result" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).zipPath))')"
-install_root="$(dirname "$zip_file")"
-unzip -o "$zip_file" -d "$install_root"
-cd "$install_root"
-bash setup.command
-npm run doctor
+curl -fsSL https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.command -o /tmp/agent-wps-install.command
+bash /tmp/agent-wps-install.command
 ```
 
 只有 `npm run doctor` 返回 `ok: true`，并且 `checks.mcpConfig.configured` 中包含 `workbuddy`，才算自动配置完成。
 
 ## Windows
 
-在 PowerShell 中下载公开 Release 中最新的 `*-windows-x64.zip`：
+在 PowerShell 中使用一键入口：
 
 ```powershell
-$Fetcher = Join-Path $env:TEMP "agent-wps-download.mjs"
-Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/scripts/download-latest-release.mjs" -OutFile $Fetcher
-$Info = (node $Fetcher --platform windows --dir (Join-Path $env:LOCALAPPDATA "Agent WPS Reviewer\downloads")) | ConvertFrom-Json
-$InstallRoot = Split-Path -Parent $Info.zipPath
-Expand-Archive -Path $Info.zipPath -DestinationPath $InstallRoot -Force
-Set-Location $InstallRoot
-cmd /c setup.cmd
-npm run doctor
+$Installer = Join-Path $env:TEMP "agent-wps-install.ps1"
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/ismailaolveira-crypto/agent-wps-reviewer/main/install-from-github.ps1" -OutFile $Installer
+powershell -ExecutionPolicy Bypass -File $Installer
 ```
 
 Windows 首次加载插件需要完成 WPS 官方 publish/trust 信任步骤。不得直接修改 `authaddin.json`。完成信任后重新运行 `npm run doctor`。
