@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -73,6 +74,9 @@ export async function downloadLatestRelease({
   retryAttempts = 3,
   retryDelayMs = 500
 } = {}) {
+  if (!['macos', 'windows'].includes(platform)) {
+    throw new Error(`Unsupported platform: ${platform}`);
+  }
   const headers = {
     accept: 'application/vnd.github+json',
     'user-agent': 'agent-wps-reviewer-release-downloader',
@@ -142,7 +146,16 @@ export async function downloadLatestRelease({
   };
 }
 
-if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1] || '')) {
+export function isDirectExecution(moduleUrl = import.meta.url, argvPath = process.argv[1] || '') {
+  if (!argvPath) return false;
+  try {
+    return realpathSync(fileURLToPath(moduleUrl)) === realpathSync(path.resolve(argvPath));
+  } catch {
+    return fileURLToPath(moduleUrl) === path.resolve(argvPath);
+  }
+}
+
+if (isDirectExecution()) {
   const args = parseArgs(process.argv.slice(2));
   console.log(JSON.stringify(await downloadLatestRelease(args), null, 2));
 }

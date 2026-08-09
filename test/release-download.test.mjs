@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
+import { execFile as execFileCallback } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { test } from 'node:test';
 import { downloadLatestRelease, selectLatestRelease, selectPlatformAssets } from '../scripts/download-latest-release.mjs';
+
+const execFile = promisify(execFileCallback);
 
 test('release downloader selects the newest published release and platform assets', () => {
   const selected = selectLatestRelease([
@@ -66,5 +70,19 @@ test('release downloader works without GitHub authentication and verifies SHA-25
     assert.equal(zipAttempts, 2);
   } finally {
     await rm(outputDir, { recursive: true, force: true });
+  }
+});
+
+test('release downloader CLI runs when invoked through a symlinked temporary path', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'wps-release-cli-'));
+  const linkedScript = path.join(root, 'download.mjs');
+  await symlink(path.resolve('scripts/download-latest-release.mjs'), linkedScript);
+  try {
+    await assert.rejects(
+      execFile(process.execPath, [linkedScript, '--platform', 'unsupported'], { timeout: 5000 }),
+      /Unsupported platform: unsupported/u
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });
