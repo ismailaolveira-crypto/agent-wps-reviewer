@@ -14,6 +14,10 @@ test('public bootstrap files connect GitHub download verification to unified set
   for (const marker of ['download-latest-release.mjs', '--platform macos', 'setup.command', 'sha256']) {
     assert.match(mac.toLowerCase(), new RegExp(marker.replaceAll('.', '\\.'), 'u'));
   }
+  assert.match(mac, /api\.github\.com\/repos\/\$REPOSITORY\/contents\/scripts\/download-latest-release\.mjs\?ref=main/u);
+  assert.match(windows, /api\.github\.com\/repos\/\$Repository\/contents\/scripts\/download-latest-release\.mjs\?ref=main/u);
+  assert.match(mac, /application\/vnd\.github\.raw\+json/u);
+  assert.match(windows, /application\/vnd\.github\.raw\+json/u);
   for (const marker of ['download-latest-release.mjs', '--platform windows', 'setup.cmd', 'sha256']) {
     assert.match(windows.toLowerCase(), new RegExp(marker.replaceAll('.', '\\.'), 'u'));
   }

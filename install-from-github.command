@@ -4,7 +4,7 @@ set -euo pipefail
 
 REPOSITORY="${AGENT_WPS_REPOSITORY:-ismailaolveira-crypto/agent-wps-reviewer}"
 INSTALL_ROOT="${AGENT_WPS_INSTALL_ROOT:-$HOME/Applications/Agent WPS Reviewer}"
-RAW_BASE="https://raw.githubusercontent.com/$REPOSITORY/main"
+FETCHER_API="https://api.github.com/repos/$REPOSITORY/contents/scripts/download-latest-release.mjs?ref=main"
 
 pause_for_exit() {
   if [ -t 0 ]; then
@@ -55,7 +55,10 @@ if [ -n "${AGENT_WPS_FETCHER_PATH:-}" ]; then
 else
   FETCHER="$(mktemp /tmp/agent-wps-download.XXXXXX.mjs)"
   FETCHER_TEMP=true
-  curl -fsSL "$RAW_BASE/scripts/download-latest-release.mjs" -o "$FETCHER" || fail "无法下载公开安装器。"
+  curl -fsSL \
+    -H 'Accept: application/vnd.github.raw+json' \
+    -H 'User-Agent: agent-wps-reviewer-bootstrap' \
+    "$FETCHER_API" -o "$FETCHER" || fail "无法下载公开安装器。"
 fi
 
 cleanup() {

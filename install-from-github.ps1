@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $Repository = if ($env:AGENT_WPS_REPOSITORY) { $env:AGENT_WPS_REPOSITORY } else { "ismailaolveira-crypto/agent-wps-reviewer" }
 $InstallRoot = if ($env:AGENT_WPS_INSTALL_ROOT) { $env:AGENT_WPS_INSTALL_ROOT } else { Join-Path $env:LOCALAPPDATA "Agent WPS Reviewer" }
-$RawBase = "https://raw.githubusercontent.com/$Repository/main"
+$FetcherApi = "https://api.github.com/repos/$Repository/contents/scripts/download-latest-release.mjs?ref=main"
 
 $Node = (Get-Command node.exe -ErrorAction SilentlyContinue).Source
 if (-not $Node) {
@@ -23,7 +23,10 @@ $Fetcher = if ($OwnFetcher) { Join-Path $env:TEMP "agent-wps-download-$PID.mjs" 
 
 try {
   if ($OwnFetcher) {
-    Invoke-WebRequest -UseBasicParsing -Uri "$RawBase/scripts/download-latest-release.mjs" -OutFile $Fetcher
+    Invoke-WebRequest -UseBasicParsing -Uri $FetcherApi -Headers @{
+      Accept = "application/vnd.github.raw+json"
+      "User-Agent" = "agent-wps-reviewer-bootstrap"
+    } -OutFile $Fetcher
   }
   Write-Host "正在从 GitHub 下载并校验 Agent 白皮书审阅助手……"
   $ResultText = (& $Node $Fetcher --platform windows --dir (Join-Path $InstallRoot "downloads") --repo $Repository) | Out-String
